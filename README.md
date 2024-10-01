@@ -1,6 +1,6 @@
 # Danny Love's Student Portfolio
 
-Welcome to my student portfolio for [Course Name]. This repository contains my work, assignments, and notes throughout the quarter. The goal of this portfolio is to provide a comprehensive overview of my progress, activities, and code development during the course.
+Welcome to my student portfolio for Computers, Sound and Music. This repository contains my work, assignments, and notes throughout the quarter. The goal of this portfolio is to provide a comprehensive overview of my progress, activities, and code development during the course.
 
 ## Repository Structure
 
