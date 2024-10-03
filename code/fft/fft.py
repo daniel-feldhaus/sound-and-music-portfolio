@@ -72,3 +72,46 @@ def audio_to_spectrogram(
         spectrogram.append(magnitude)
 
     return np.array(spectrogram).T  # Transpose so that rows represent frequencies
+
+
+def main():
+    # Check for the correct number of command-line arguments
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <input_audio_file> <output_image_file>")
+        sys.exit(1)
+
+    input_audio_file = sys.argv[1]
+    output_image_file = sys.argv[2]
+
+    # Read the audio file
+    audio_data, _sample_rate = sf.read(input_audio_file)
+
+    # If stereo, select one channel (first channel)
+    if len(audio_data.shape) > 1:
+        audio_data = audio_data[:, 0]
+
+    # Define parameters for the spectrogram
+    window_size = 1024  # Size of the FFT window
+    overlap = 512  # Overlap between consecutive windows
+
+    # Compute the spectrogram using the ditfft2 function
+    spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
+
+    # Plot the spectrogram
+    plt.figure(figsize=(10, 6))
+    plt.imshow(
+        10 * np.log10(spectrogram + 1e-6), aspect="auto", origin="lower", cmap="viridis"
+    )
+    plt.colorbar(label="Magnitude (dB)")
+    plt.title("Spectrogram")
+    plt.xlabel("Time (frames)")
+    plt.ylabel("Frequency (bins)")
+    plt.grid(False)
+
+    # Save the spectrogram as an image
+    plt.savefig(output_image_file)
+    print(f"Spectrogram saved as {output_image_file}")
+
+
+if __name__ == "__main__":
+    main()
