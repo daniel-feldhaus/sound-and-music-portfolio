@@ -154,13 +154,48 @@ def load_spectrogram(filename: str):
     return spectrogram, window_size, overlap, sample_rate
 
 
+def spectrogram_to_audio(
+    spectrogram: np.ndarray, window_size: int, overlap: int, sample_rate: int
+) -> np.ndarray:
+    """
+    Reconstructs audio from a spectrogram using an in-house inverse FFT.
+    """
+    step_size = window_size - overlap
+    num_windows = spectrogram.shape[1]
+    audio_length = num_windows * step_size + overlap
+    audio_data = np.zeros(audio_length)
+
+    for i in range(num_windows):
+        # Get magnitude spectrum
+        magnitude = spectrogram[:, i]
+        # Assume zero phase
+        phase = np.zeros_like(magnitude)
+        # Construct the complex spectrum
+        positive_freqs = magnitude * np.exp(1j * phase)
+        # Reconstruct the full spectrum
+        full_spectrum = np.concatenate([positive_freqs, positive_freqs[-2:0:-1].conj()])
+        # Inverse FFT
+        time_signal = inverse_ditfft2(full_spectrum, window_size, 1).real
+        time_signal /= window_size  # Normalize
+
+        # Overlap-add
+        start_idx = i * step_size
+        end_idx = start_idx + window_size
+        audio_data[start_idx:end_idx] += time_signal
+
+    return audio_data
+
+
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python script.py <input_audio_file> <output_image_file>")
+    if len(sys.argv) != 4:
+        print(
+            "Usage: python script.py <input_audio_file> <output_image_file> <output_audio_file>"
+        )
         sys.exit(1)
 
     input_audio_file = sys.argv[1]
     output_image_file = sys.argv[2]
+    output_audio_file = sys.argv[3]
 
     # Read the audio file
     audio_data, sample_rate = sf.read(input_audio_file)
@@ -172,13 +207,18 @@ def main():
     window_size = 1024  # Size of the FFT window
     overlap = 512  # Overlap between consecutive windows
 
+    # Generate and save spectrogram
     spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
     save_spectrogram(output_image_file, spectrogram, window_size, overlap, sample_rate)
     print(f"Spectrogram saved as {output_image_file}")
 
-    # Example of loading the spectrogram back
+    # Load spectrogram and reconstruct audio
     loaded_spectrogram, ws, ov, sr = load_spectrogram(output_image_file)
-    print(f"Loaded spectrogram with window size {ws}, overlap {ov}, sample rate {sr}")
+    reconstructed_audio = spectrogram_to_audio(loaded_spectrogram, ws, ov, sr)
+
+    # Save the reconstructed audio
+    sf.write(output_audio_file, reconstructed_audio, sr)
+    print(f"Reconstructed audio saved as {output_audio_file}")
 
 
 if __name__ == "__main__":
