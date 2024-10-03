@@ -75,7 +75,6 @@ def audio_to_spectrogram(
 
 
 def main():
-    # Check for the correct number of command-line arguments
     if len(sys.argv) != 3:
         print("Usage: python script.py <input_audio_file> <output_image_file>")
         sys.exit(1)
@@ -90,26 +89,20 @@ def main():
     if len(audio_data.shape) > 1:
         audio_data = audio_data[:, 0]
 
-    # Define parameters for the spectrogram
     window_size = 1024  # Size of the FFT window
     overlap = 512  # Overlap between consecutive windows
 
-    # Compute the spectrogram using the ditfft2 function
     spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
 
-    # Plot the spectrogram
-    plt.figure(figsize=(10, 6))
-    plt.imshow(
-        10 * np.log10(spectrogram + 1e-6), aspect="auto", origin="lower", cmap="viridis"
-    )
-    plt.colorbar(label="Magnitude (dB)")
-    plt.title("Spectrogram")
-    plt.xlabel("Time (frames)")
-    plt.ylabel("Frequency (bins)")
-    plt.grid(False)
+    log_spectrogram = 10 * np.log10(spectrogram + 1e-6)
 
-    # Save the spectrogram as an image
-    plt.savefig(output_image_file)
+    # Normalize the spectrogram to the range [0, 255] for grayscale representation
+    log_spectrogram -= log_spectrogram.min()
+    log_spectrogram /= log_spectrogram.max()
+    log_spectrogram *= 255
+
+    # Save the spectrogram as a grayscale image
+    plt.imsave(output_image_file, log_spectrogram, cmap="gray", origin="lower")
     print(f"Spectrogram saved as {output_image_file}")
 
 
