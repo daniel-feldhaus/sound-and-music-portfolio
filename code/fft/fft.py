@@ -228,7 +228,7 @@ def main():
         audio_data = audio_data[:, 0]
 
     window_size = 1024  # Size of the FFT window
-    overlap = 512  # Overlap between consecutive windows
+    overlap = window_size // 2
 
     # Generate and save spectrogram
     spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
