@@ -19,7 +19,7 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
     np.ndarray: The DFT of the input array x.
     """
     if N == 1:
-        return np.array([x[0]])  # base case: DFT of size 1
+        return np.array([x[0]], dtype=complex)  # base case: DFT of size 1
 
     # DFT of the even-indexed elements
     X_even = ditfft2(x, N // 2, 2 * s)
@@ -30,12 +30,34 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
     # Combine the results
     X = np.zeros(N, dtype=complex)
     for k in range(N // 2):
-        p = X_even[k]
-        q = np.exp(-2j * np.pi * k / N) * X_odd[k]
-        X[k] = p + q
-        X[k + N // 2] = p - q
+        twiddle = np.exp(-2j * np.pi * k / N) * X_odd[k]
+        X[k] = X_even[k] + twiddle
+        X[k + N // 2] = X_even[k] - twiddle
 
     return X
+
+
+def inverse_ditfft2(X: np.ndarray, N: int, s: int) -> np.ndarray:
+    """
+    Recursive implementation of radix-2 inverse DIT FFT.
+    """
+    if N == 1:
+        return np.array([X[0]], dtype=complex)  # base case
+
+    # Inverse FFT of the even-indexed elements
+    x_even = inverse_ditfft2(X, N // 2, 2 * s)
+
+    # Inverse FFT of the odd-indexed elements
+    x_odd = inverse_ditfft2(X[N // 2 :], N // 2, 2 * s)
+
+    # Combine the results
+    x = np.zeros(N, dtype=complex)
+    for n in range(N // 2):
+        twiddle = np.exp(2j * np.pi * n / N) * x_odd[n]
+        x[n] = x_even[n] + twiddle
+        x[n + N // 2] = x_even[n] - twiddle
+
+    return x
 
 
 def audio_to_spectrogram(
