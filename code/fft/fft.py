@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import soundfile as sf
+import sys
 
 
 def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
@@ -32,3 +35,40 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
         X[k + N // 2] = p - q
 
     return X
+
+
+def audio_to_spectrogram(
+    audio_data: np.ndarray, window_size: int, overlap: int, fft_func
+) -> np.ndarray:
+    """
+    Computes a 2D spectrogram using the FFT function.
+
+    Args:
+    audio_data (np.ndarray): Input audio signal.
+    window_size (int): Size of each FFT window (number of samples per window).
+    overlap (int): Overlap between consecutive windows (in samples).
+    fft_func (function): FFT function to use.
+
+    Returns:
+    np.ndarray: Spectrogram as a 2D array (time x frequency).
+    """
+    step_size = window_size - overlap
+    num_windows = (len(audio_data) - window_size) // step_size + 1
+    spectrogram = []
+
+    for i in range(num_windows):
+        # Extract the windowed portion of the audio signal
+        start_idx = i * step_size
+        end_idx = start_idx + window_size
+        window_data = audio_data[start_idx:end_idx]
+
+        # Apply FFT to the window
+        fft_result = fft_func(window_data, window_size, 1)
+
+        # Compute magnitude and add to the spectrogram
+        magnitude = np.abs(
+            fft_result[: window_size // 2]
+        )  # Only take the positive frequencies
+        spectrogram.append(magnitude)
+
+    return np.array(spectrogram).T  # Transpose so that rows represent frequencies
