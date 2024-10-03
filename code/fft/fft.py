@@ -19,7 +19,7 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
     np.ndarray: The DFT of the input array x.
     """
     if N == 1:
-        return np.array([x[0]], dtype=complex)  # base case: DFT of size 1
+        return np.array([x[0]], dtype=complex)
 
     # DFT of the even-indexed elements
     X_even = ditfft2(x, N // 2, 2 * s)
@@ -50,12 +50,12 @@ def inverse_ditfft2(X: np.ndarray, N: int, s: int) -> np.ndarray:
         np.ndarray: The inverse DFT of the input array X, yielding the time-domain signal.
     """
     if N == 1:
-        return np.array([X[0]], dtype=complex)  # base case
+        return np.array([X[0]], dtype=complex)
 
-    # Inverse FFT of the even-indexed elements
+    # Inverse DFT of the even-indexed elements
     x_even = inverse_ditfft2(X, N // 2, 2 * s)
 
-    # Inverse FFT of the odd-indexed elements
+    # Inverse DFT of the odd-indexed elements
     x_odd = inverse_ditfft2(X[N // 2 :], N // 2, 2 * s)
 
     # Combine the results
@@ -166,12 +166,26 @@ def spectrogram_to_audio(
     spectrogram: np.ndarray, window_size: int, overlap: int
 ) -> np.ndarray:
     """
-    Reconstructs audio from a spectrogram.
+    Reconstructs audio from a spectrogram using an in-house inverse FFT,
+    applying the Hanning window during reconstruction.
+
+    Args:
+        spectrogram (np.ndarray): Input spectrogram (magnitude only).
+        window_size (int): Size of each FFT window (number of samples per window).
+        overlap (int): Overlap between consecutive windows (in samples).
+        sample_rate (int): Sample rate of the audio signal.
+
+    Returns:
+        np.ndarray: Reconstructed audio signal.
     """
     step_size = window_size - overlap
     num_windows = spectrogram.shape[1]
     audio_length = num_windows * step_size + overlap
     audio_data = np.zeros(audio_length)
+    window_sum = np.zeros(audio_length)  # To normalize overlapping windows
+
+    # Precompute the Hanning window
+    hanning_window = np.hanning(window_size)
 
     for i in range(num_windows):
         # Get magnitude spectrum
@@ -186,10 +200,18 @@ def spectrogram_to_audio(
         time_signal = inverse_ditfft2(full_spectrum, window_size, 1).real
         time_signal /= window_size  # Normalize
 
+        # Apply the Hanning window
+        time_signal *= hanning_window
+
         # Overlap-add
         start_idx = i * step_size
         end_idx = start_idx + window_size
         audio_data[start_idx:end_idx] += time_signal
+        window_sum[start_idx:end_idx] += hanning_window
+
+    # Avoid division by zero
+    nonzero_indices = window_sum > 1e-6
+    audio_data[nonzero_indices] /= window_sum[nonzero_indices]
 
     return audio_data
 
