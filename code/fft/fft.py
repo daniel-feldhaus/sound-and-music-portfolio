@@ -39,12 +39,12 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
 
 def inverse_ditfft2(X: np.ndarray, N: int, s: int) -> np.ndarray:
     """
-    Recursive implementation of radix-2 inverse DIT FFT.
+    Computes the inverse FFT using the forward FFT function.
 
     Args:
         X (np.ndarray): Input array of complex numbers representing the frequency-domain signal.
         N (int): Size of the inverse DFT to compute.
-        s (int): Stride, used to pick every s-th element in the array during recursion.
+        s (int): Stride, used during recursion.
 
     Returns:
         np.ndarray: The inverse DFT of the input array X, yielding the time-domain signal.
@@ -52,18 +52,14 @@ def inverse_ditfft2(X: np.ndarray, N: int, s: int) -> np.ndarray:
     if N == 1:
         return np.array([X[0]], dtype=complex)
 
-    # Inverse DFT of the even-indexed elements
-    x_even = inverse_ditfft2(X, N // 2, 2 * s)
+    # Conjugate the input
+    X_conj = np.conj(X)
 
-    # Inverse DFT of the odd-indexed elements
-    x_odd = inverse_ditfft2(X[N // 2 :], N // 2, 2 * s)
+    # Use the forward FFT function on the conjugated input
+    x_conj = ditfft2(X_conj, N, s)
 
-    # Combine the results
-    x = np.zeros(N, dtype=complex)
-    for n in range(N // 2):
-        twiddle = np.exp(2j * np.pi * n / N) * x_odd[n]
-        x[n] = x_even[n] + twiddle
-        x[n + N // 2] = x_even[n] - twiddle
+    # Conjugate and normalize
+    x = np.conj(x_conj) / N
 
     return x
 
@@ -182,7 +178,7 @@ def spectrogram_to_audio(
     num_windows = spectrogram.shape[1]
     audio_length = num_windows * step_size + overlap
     audio_data = np.zeros(audio_length)
-    window_sum = np.zeros(audio_length)  # To normalize overlapping windows
+    window_sum = np.zeros(audio_length)
 
     # Precompute the Hanning window
     hanning_window = np.hanning(window_size)
@@ -196,9 +192,7 @@ def spectrogram_to_audio(
         positive_freqs = magnitude * np.exp(1j * phase)
         # Reconstruct the full spectrum
         full_spectrum = np.concatenate([positive_freqs, positive_freqs[-2:0:-1].conj()])
-        # Inverse FFT
         time_signal = inverse_ditfft2(full_spectrum, window_size, 1).real
-        time_signal /= window_size  # Normalize
 
         # Apply the Hanning window
         time_signal *= hanning_window
@@ -209,7 +203,6 @@ def spectrogram_to_audio(
         audio_data[start_idx:end_idx] += time_signal
         window_sum[start_idx:end_idx] += hanning_window
 
-    # Avoid division by zero
     nonzero_indices = window_sum > 1e-6
     audio_data[nonzero_indices] /= window_sum[nonzero_indices]
 
