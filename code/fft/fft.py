@@ -1,5 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from PIL import Image
+from PIL import PngImagePlugin
 import soundfile as sf
 import sys
 
@@ -74,6 +75,24 @@ def audio_to_spectrogram(
     return np.array(spectrogram).T  # Transpose so that rows represent frequencies
 
 
+def save_spectrogram(
+    filename: str, spectrogram: np.ndarray, window_size: int, overlap: int
+):
+    meta = PngImagePlugin.PngInfo()
+    meta.add_text("window_size", str(window_size))
+    meta.add_text("overlap", str(overlap))
+
+    log_spectrogram = 10 * np.log10(spectrogram + 1e-6)
+    meta.add_text("min", str(log_spectrogram.min()))
+    meta.add_text("max", str(log_spectrogram.max()))
+    # Normalize the spectrogram to the range [0, 255] for grayscale representation
+    log_spectrogram -= log_spectrogram.min()
+    log_spectrogram /= log_spectrogram.max()
+    log_spectrogram *= 255
+    with Image.open(filename) as im:
+        im.save(filename, "png", pngInfo=meta)
+
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python script.py <input_audio_file> <output_image_file>")
@@ -93,16 +112,7 @@ def main():
     overlap = 512  # Overlap between consecutive windows
 
     spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
-
-    log_spectrogram = 10 * np.log10(spectrogram + 1e-6)
-
-    # Normalize the spectrogram to the range [0, 255] for grayscale representation
-    log_spectrogram -= log_spectrogram.min()
-    log_spectrogram /= log_spectrogram.max()
-    log_spectrogram *= 255
-
-    # Save the spectrogram as a grayscale image
-    plt.imsave(output_image_file, log_spectrogram, cmap="gray", origin="lower")
+    save_spectrogram(output_image_file, spectrogram, window_size, overlap)
     print(f"Spectrogram saved as {output_image_file}")
 
 
