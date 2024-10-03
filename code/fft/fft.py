@@ -89,9 +89,7 @@ def audio_to_spectrogram(
         fft_result = fft_func(window_data, window_size, 1)
 
         # Compute magnitude and add to the spectrogram
-        magnitude = np.abs(
-            fft_result[: window_size // 2]
-        )  # Only take the positive frequencies
+        magnitude = np.abs(fft_result[: window_size // 2 + 1])
         spectrogram.append(magnitude)
 
     return np.array(spectrogram).T  # Transpose so that rows represent frequencies
