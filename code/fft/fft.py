@@ -76,11 +76,16 @@ def audio_to_spectrogram(
 
 
 def save_spectrogram(
-    filename: str, spectrogram: np.ndarray, window_size: int, overlap: int
+    filename: str,
+    spectrogram: np.ndarray,
+    window_size: int,
+    overlap: int,
+    sample_rate: int,
 ):
     meta = PngImagePlugin.PngInfo()
     meta.add_text("window_size", str(window_size))
     meta.add_text("overlap", str(overlap))
+    meta.add_text("sample_rate", str(sample_rate))
 
     log_spectrogram = 10 * np.log10(spectrogram + 1e-6)
     meta.add_text("min", str(log_spectrogram.min()))
@@ -89,8 +94,44 @@ def save_spectrogram(
     log_spectrogram -= log_spectrogram.min()
     log_spectrogram /= log_spectrogram.max()
     log_spectrogram *= 255
-    with Image.open(filename) as im:
-        im.save(filename, "png", pngInfo=meta)
+
+    # Create an image from the data and save it
+    image = Image.fromarray(log_spectrogram.astype(np.uint8))
+    image.save(filename, "png", pnginfo=meta)
+
+
+def load_spectrogram(filename: str):
+    """
+    Loads a spectrogram from a file and recreates it using the included metadata.
+
+    Args:
+    filename (str): Path to the spectrogram image file.
+
+    Returns:
+    tuple: (spectrogram, window_size, overlap, sample_rate)
+    """
+    # Open the image and read metadata
+    image = Image.open(filename)
+    meta = image.info
+
+    # Read parameters from metadata
+    window_size = int(meta.get("window_size"))
+    overlap = int(meta.get("overlap"))
+    sample_rate = int(meta.get("sample_rate"))
+    log_spectrogram_min = float(meta.get("min"))
+    log_spectrogram_max = float(meta.get("max"))
+
+    # Read the image data and convert back to the original log_spectrogram
+    log_spectrogram_normalized = np.array(image)
+    log_spectrogram = log_spectrogram_normalized.astype(np.float32)
+    log_spectrogram /= 255
+    log_spectrogram *= log_spectrogram_max - log_spectrogram_min
+    log_spectrogram += log_spectrogram_min
+
+    # Convert back from log scale to linear spectrogram
+    spectrogram = 10 ** (log_spectrogram / 10) - 1e-6  # Reverse the log
+
+    return spectrogram, window_size, overlap, sample_rate
 
 
 def main():
@@ -102,7 +143,7 @@ def main():
     output_image_file = sys.argv[2]
 
     # Read the audio file
-    audio_data, _sample_rate = sf.read(input_audio_file)
+    audio_data, sample_rate = sf.read(input_audio_file)
 
     # If stereo, select one channel (first channel)
     if len(audio_data.shape) > 1:
@@ -112,8 +153,12 @@ def main():
     overlap = 512  # Overlap between consecutive windows
 
     spectrogram = audio_to_spectrogram(audio_data, window_size, overlap, ditfft2)
-    save_spectrogram(output_image_file, spectrogram, window_size, overlap)
+    save_spectrogram(output_image_file, spectrogram, window_size, overlap, sample_rate)
     print(f"Spectrogram saved as {output_image_file}")
+
+    # Example of loading the spectrogram back
+    loaded_spectrogram, ws, ov, sr = load_spectrogram(output_image_file)
+    print(f"Loaded spectrogram with window size {ws}, overlap {ov}, sample rate {sr}")
 
 
 if __name__ == "__main__":
