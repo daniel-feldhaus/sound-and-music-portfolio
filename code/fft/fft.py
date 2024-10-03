@@ -40,6 +40,14 @@ def ditfft2(x: np.ndarray, N: int, s: int) -> np.ndarray:
 def inverse_ditfft2(X: np.ndarray, N: int, s: int) -> np.ndarray:
     """
     Recursive implementation of radix-2 inverse DIT FFT.
+
+    Args:
+        X (np.ndarray): Input array of complex numbers representing the frequency-domain signal.
+        N (int): Size of the inverse DFT to compute.
+        s (int): Stride, used to pick every s-th element in the array during recursion.
+
+    Returns:
+        np.ndarray: The inverse DFT of the input array X, yielding the time-domain signal.
     """
     if N == 1:
         return np.array([X[0]], dtype=complex)  # base case
@@ -155,10 +163,10 @@ def load_spectrogram(filename: str):
 
 
 def spectrogram_to_audio(
-    spectrogram: np.ndarray, window_size: int, overlap: int, sample_rate: int
+    spectrogram: np.ndarray, window_size: int, overlap: int
 ) -> np.ndarray:
     """
-    Reconstructs audio from a spectrogram using an in-house inverse FFT.
+    Reconstructs audio from a spectrogram.
     """
     step_size = window_size - overlap
     num_windows = spectrogram.shape[1]
@@ -214,7 +222,7 @@ def main():
 
     # Load spectrogram and reconstruct audio
     loaded_spectrogram, ws, ov, sr = load_spectrogram(output_image_file)
-    reconstructed_audio = spectrogram_to_audio(loaded_spectrogram, ws, ov, sr)
+    reconstructed_audio = spectrogram_to_audio(loaded_spectrogram, ws, ov)
 
     # Save the reconstructed audio
     sf.write(output_audio_file, reconstructed_audio, sr)
