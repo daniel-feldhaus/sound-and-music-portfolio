@@ -1,3 +1,12 @@
+"""
+A fun little script that explores fast fourier transform, and inverse fast fourier transform.
+
+It takes an audio file, converts it to a spectrogram, and then reconstructs the audio from the spectrogram.
+
+To run:
+    python <input_file.wav> <output_spectrgram_file.png> <output_reconstructed_audio_file.wav>
+"""
+
 import numpy as np
 from PIL import Image
 from PIL import PngImagePlugin
