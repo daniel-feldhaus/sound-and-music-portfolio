@@ -8,5 +8,8 @@ Welcome to my student portfolio for Computers, Sound and Music. This repository 
 - **[notebook.md](notebook.md)**: My engineering notebook, which contains detailed diary entries of my work and progress.
 - **[code/](code/)**: Directory where all code and libraries I develop during the course will be stored.
 
----
+## Homework Project Links
+
+Homework #1: [clipped](./code/clipped/)
+
 
