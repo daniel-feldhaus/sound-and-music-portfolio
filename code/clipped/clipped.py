@@ -1,7 +1,6 @@
-import argparse
-from typing import Tuple
-import soundfile as sf
+from typing import Optional
 import numpy as np
+import soundfile as sf
 from pathlib import Path
 
 
@@ -9,8 +8,8 @@ def generate_sine_wave(
     frequency: float,
     sample_rate: int,
     duration: float,
-    amplitude: float,
-    clip_percent: float = 0.25,
+    amplitude: int,
+    clip_amplitude: Optional[int] = None,
 ) -> np.ndarray:
     """
     Generate a sine wave as a numpy array.
@@ -18,9 +17,13 @@ def generate_sine_wave(
     t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
     wave = amplitude * np.sin(2 * np.pi * frequency * t)
 
-    clip_amplitude = amplitude * (1 - clip_percent)
-    wave[wave > clip_amplitude] = clip_amplitude
-    wave[wave < -clip_amplitude] = -clip_amplitude
+    if clip_amplitude != None:
+        clip_amplitude = np.int16(clip_amplitude)
+        wave[wave > clip_amplitude] = clip_amplitude
+        wave[wave < -clip_amplitude] = -clip_amplitude
+
+    wave = np.int16(wave)
+
     return wave
 
 
@@ -29,57 +32,25 @@ def save_to_wav(filepath: Path, samples: np.ndarray, sample_rate: int):
     if filepath.suffix != ".wav":
         raise ValueError(f"Save file must have type 'wav': {filepath}")
 
-    # Write the samples directly to the file
-    sf.write(str(filepath), samples, sample_rate, format="WAV")
+    sf.write(str(filepath), samples, sample_rate, format="WAV", subtype="PCM_16")
 
 
 def main():
     """
-    Takes command-line arguments and generates a sine wave.
+    Takes command-line arguments and generates a sine wave, then saves it to a WAV file.
     """
-    parser = argparse.ArgumentParser(
-        description="Generate a sine wave and output the numpy array."
-    )
-    parser.add_argument(
-        "frequency", type=float, help="Frequency of the sine wave in Hz."
-    )
-    parser.add_argument(
-        "--sample_rate",
-        type=int,
-        default=48000,
-        help="Sample rate in Hz.",
-    )
-    parser.add_argument(
-        "--duration",
-        type=float,
-        default=1,
-        help="Duration of the sine wave in seconds.",
-    )
-    parser.add_argument(
-        "--amplitude",
-        type=float,
-        default=8192,
-        help="Amplitude of the sine wave (default is 8192).",
-    )
-
-    args = parser.parse_args()
-
+    FREQUENCY = 440
+    SAMPLE_RATE = 48000
+    DURATION = 1
     # Generate the sine wave using the provided arguments
-    sine_wave = generate_sine_wave(
-        args.frequency, args.sample_rate, args.duration, args.amplitude
-    )
-
-    save_to_wav(Path("sine.wav"), sine_wave, args.sample_rate)
-
+    sine_wave = generate_sine_wave(FREQUENCY, SAMPLE_RATE, DURATION, amplitude=8192)
     clipped_sine_wave = generate_sine_wave(
-        args.frequency,
-        args.sample_rate,
-        args.duration,
-        args.amplitude,
-        clip_percent=0.25,
+        FREQUENCY, SAMPLE_RATE, DURATION, amplitude=16384, clip_amplitude=8192
     )
 
-    save_to_wav(Path("clipped.wav"), clipped_sine_wave, args.sample_rate)
+    save_to_wav(Path("sine.wav"), sine_wave, SAMPLE_RATE)
+
+    save_to_wav(Path("clipped.wav"), clipped_sine_wave, SAMPLE_RATE)
 
 
 if __name__ == "__main__":
