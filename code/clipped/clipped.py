@@ -1,6 +1,7 @@
 from typing import Optional
 import numpy as np
 import soundfile as sf
+import sounddevice as sd
 from pathlib import Path
 
 
@@ -35,6 +36,15 @@ def save_to_wav(filepath: Path, samples: np.ndarray, sample_rate: int):
     sf.write(str(filepath), samples, sample_rate, format="WAV", subtype="PCM_16")
 
 
+def play(samples: np.ndarray, sample_rate: int):
+    # Convert int16 samples to float32 in the range [-1.0, 1.0]
+    float_samples = samples.astype(np.float32) / np.iinfo(np.int16).max
+
+    # Play the sound
+    sd.play(float_samples, sample_rate)
+    sd.wait()  # Wait until playback finishes
+
+
 def main():
     """
     Takes command-line arguments and generates a sine wave, then saves it to a WAV file.
@@ -51,6 +61,8 @@ def main():
     save_to_wav(Path("sine.wav"), sine_wave, SAMPLE_RATE)
 
     save_to_wav(Path("clipped.wav"), clipped_sine_wave, SAMPLE_RATE)
+
+    play(sine_wave, SAMPLE_RATE)
 
 
 if __name__ == "__main__":
