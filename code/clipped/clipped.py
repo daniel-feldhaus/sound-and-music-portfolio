@@ -1,8 +1,8 @@
 from typing import Optional
-import numpy as np
-import soundfile as sf
-import sounddevice as sd
 from pathlib import Path
+import numpy as np
+from scipy.io import wavfile
+import sounddevice as sd
 
 
 def generate_sine_wave(
@@ -33,7 +33,7 @@ def save_to_wav(filepath: Path, samples: np.ndarray, sample_rate: int):
     if filepath.suffix != ".wav":
         raise ValueError(f"Save file must have type 'wav': {filepath}")
 
-    sf.write(str(filepath), samples, sample_rate, format="WAV", subtype="PCM_16")
+    wavfile.write(str(filepath), sample_rate, samples)
 
 
 def play(samples: np.ndarray, sample_rate: int):
