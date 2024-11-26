@@ -1,3 +1,5 @@
+"""This module is for visualization of a sound signal."""
+
 import numpy as np
 import librosa
 import librosa.display
@@ -23,8 +25,8 @@ def visualize_spectrograms(
     )
     axes[0].set_title("Original Spectrogram")
     for low, high in bands.values():
-        axes[0].axhline(low, color="red", linestyle="--", alpha=0.6)
-        axes[0].axhline(high, color="red", linestyle="--", alpha=0.6)
+        axes[0].axhline(low, color="white", linestyle="--", alpha=0.6)
+        axes[0].axhline(high, color="white", linestyle="--", alpha=0.6)
 
     # Modified spectrogram
     librosa.display.specshow(
@@ -36,8 +38,8 @@ def visualize_spectrograms(
     )
     axes[1].set_title("Modified Spectrogram")
     for low, high in bands.values():
-        axes[1].axhline(low, color="red", linestyle="--", alpha=0.6)
-        axes[1].axhline(high, color="red", linestyle="--", alpha=0.6)
+        axes[1].axhline(low, color="white", linestyle="--", alpha=0.6)
+        axes[1].axhline(high, color="white", linestyle="--", alpha=0.6)
 
     plt.tight_layout()
     plt.show()
