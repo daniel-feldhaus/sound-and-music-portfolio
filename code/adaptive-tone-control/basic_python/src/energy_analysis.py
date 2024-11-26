@@ -66,7 +66,7 @@ def apply_gain(
         high_cut = high / nyquist
 
         # Validate the filter frequency range
-        if not (0 < low_cut < high_cut < 1):
+        if not 0 < low_cut < high_cut < 1:
             raise ValueError(
                 f"Invalid bandpass filter range for {band_name}: {low_cut}-{high_cut} (normalized)"
             )
