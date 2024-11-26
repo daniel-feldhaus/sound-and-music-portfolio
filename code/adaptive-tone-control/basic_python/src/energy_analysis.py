@@ -15,7 +15,9 @@ def calculate_band_energy_from_signal(
     Args:
         signal: Input audio signal as a NumPy array.
         sampling_rate: Sampling rate of the signal in Hz.
-        bands: A dictionary where keys are band names and values are tuples defining band ranges (low, high).
+        bands:
+            A dictionary where keys are band names and values are tuples defining
+            band ranges (low, high).
 
     Returns:
         A dictionary with band names as keys and their respective energy as values.
@@ -77,3 +79,75 @@ def apply_gain(
         filtered_signal += band_signal * gain[band_name]
 
     return filtered_signal
+
+
+def smooth_gain(
+    prev_gain: dict[str, float], current_gain: dict[str, float], alpha: float
+) -> dict[str, float]:
+    """
+    Smooth gain transitions using an exponential moving average.
+
+    Args:
+        prev_gain: Previous gain values.
+        current_gain: Current gain values.
+        alpha: Smoothing factor (0 < alpha <= 1).
+
+    Returns:
+        Smoothed gain values.
+    """
+    return {
+        band: alpha * prev_gain[band] + (1 - alpha) * current_gain[band]
+        for band in current_gain
+    }
+
+
+def dynamic_tone_control(
+    signal: np.ndarray,
+    sampling_rate: int,
+    bands: dict[str, tuple[float, float]],
+    frame_size: int = 2048,
+    hop_size: int = 1024,
+    smoothing_factor: float = 0.9,
+) -> np.ndarray:
+    """
+    Perform dynamic tone control by adjusting band-specific gains in real-time.
+
+    Args:
+        signal: Input audio signal.
+        sampling_rate: Sampling rate of the audio signal.
+        bands: Frequency bands with their ranges.
+        frame_size: Size of each frame for processing.
+        hop_size: Overlap size between consecutive frames.
+        smoothing_factor: Smoothing factor for gain adjustments.
+
+    Returns:
+        Processed audio signal with dynamically adjusted tone.
+    """
+    num_frames = (len(signal) - frame_size) // hop_size + 1
+    smoothed_gain = {band: 1.0 for band in bands}  # Initial gains
+    output_signal = np.zeros_like(signal)
+
+    for i in range(num_frames):
+        start = i * hop_size
+        end = start + frame_size
+        frame = signal[start:end]
+
+        # Calculate band energy for the current frame
+        band_energy = calculate_band_energy_from_signal(frame, sampling_rate, bands)
+        avg_energy = np.mean(list(band_energy.values()))
+
+        # Calculate current gains to equalize band energy
+        current_gain = {
+            band: avg_energy / (energy + 1e-6) for band, energy in band_energy.items()
+        }
+
+        # Smooth the gain transitions
+        smoothed_gain = smooth_gain(smoothed_gain, current_gain, smoothing_factor)
+
+        # Apply smoothed gains to the current frame
+        adjusted_frame = apply_gain(frame, smoothed_gain, sampling_rate, bands)
+
+        # Overlap-add to reconstruct the output signal
+        output_signal[start:end] += adjusted_frame
+
+    return output_signal

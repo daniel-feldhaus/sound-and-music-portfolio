@@ -1,19 +1,26 @@
+"""This module takes in command line arguments to modify a sound file. It then saves the result, and visualizes the applied changes."""
+
 import argparse
 import librosa
 import librosa.display
 import soundfile as sf
-import numpy as np
-from energy_analysis import calculate_band_energy_from_signal, apply_gain
+from energy_analysis import dynamic_tone_control
 from visualization import visualize_spectrograms
 
 
 def parse_arguments():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Process audio with dynamic tone control."
+        description="Dynamic Tone Control with Visualization."
     )
     parser.add_argument(
         "input_file", type=str, help="Path to the input audio file (required)."
+    )
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        help="Path to save the modified audio file (optional).",
+        default="output_audio.wav",
     )
     parser.add_argument(
         "--bands",
@@ -22,12 +29,22 @@ def parse_arguments():
         help="Frequency bands in the format 'band_name:low-high,...' (default: low:0-300,mid:300-2000,high:2000-22050).",
     )
     parser.add_argument(
-        "--output_file", type=str, help="Path to save the modified audio (optional)."
+        "--frame_size",
+        type=int,
+        default=2048,
+        help="Frame size for dynamic processing (default: 2048).",
     )
     parser.add_argument(
-        "--gain",
-        type=str,
-        help="Gain adjustments for bands in the format 'band_name:gain,...' (e.g., low:1.5,mid:1.0,high:0.8).",
+        "--hop_size",
+        type=int,
+        default=1024,
+        help="Hop size for overlapping frames (default: 1024).",
+    )
+    parser.add_argument(
+        "--smoothing_factor",
+        type=float,
+        default=0.9,
+        help="Smoothing factor for dynamic gain adjustment (default: 0.9).",
     )
     return parser.parse_args()
 
@@ -43,40 +60,31 @@ def parse_bands(bands_arg, sampling_rate):
     return bands
 
 
-def parse_gain(gain_arg, default_gain):
-    """Parse the gain argument into a dictionary."""
-    if not gain_arg:
-        return default_gain
-    gain = {}
-    for gain_def in gain_arg.split(","):
-        name, value = gain_def.split(":")
-        gain[name] = float(value)
-    return gain
-
-
 def main():
+    # Parse arguments
     args = parse_arguments()
 
     # Load audio file
     signal, sampling_rate = librosa.load(args.input_file, sr=None)
 
-    # Parse bands and gain arguments
+    # Parse bands
     bands = parse_bands(args.bands, sampling_rate)
-    initial_energy = calculate_band_energy_from_signal(signal, sampling_rate, bands)
-    average_energy = np.mean(list(initial_energy.values()))
-    default_gain = {
-        band: average_energy / (energy + 1e-6)
-        for band, energy in initial_energy.items()
-    }
-    gain = parse_gain(args.gain, default_gain)
 
-    # Apply gain adjustments
-    modified_signal = apply_gain(signal, gain, sampling_rate, bands)
+    # Apply dynamic tone control
+    modified_signal = dynamic_tone_control(
+        signal,
+        sampling_rate,
+        bands,
+        frame_size=args.frame_size,
+        hop_size=args.hop_size,
+        smoothing_factor=args.smoothing_factor,
+    )
 
-    # Save modified audio if output file is specified
+    # Save output file
     if args.output_file:
         sf.write(args.output_file, modified_signal, sampling_rate)
 
+    # Visualize before/after spectrograms
     visualize_spectrograms(signal, modified_signal, sampling_rate, bands)
 
 
