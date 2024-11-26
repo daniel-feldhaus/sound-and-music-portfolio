@@ -51,3 +51,32 @@ def generate_noise(duration: float, sampling_rate: int) -> np.ndarray:
         A NumPy array representing the noise signal.
     """
     return np.random.normal(0, 1, int(sampling_rate * duration))
+
+
+def load_audio_file(
+    filepath: str, sampling_rate: int = 44100
+) -> tuple[np.ndarray, int]:
+    """
+    Load an audio file.
+
+    Args:
+        filepath: Path to the audio file.
+        sampling_rate: Desired sampling rate in Hz.
+
+    Returns:
+        A tuple of the audio signal as a NumPy array and the sampling rate.
+    """
+    signal, sr = librosa.load(filepath, sr=sampling_rate)
+    return signal, sr
+
+
+def save_audio_file(filepath: str, signal: np.ndarray, sampling_rate: int) -> None:
+    """
+    Save an audio signal to a file.
+
+    Args:
+        filepath: Path to save the audio file.
+        signal: Audio signal as a NumPy array.
+        sampling_rate: Sampling rate in Hz.
+    """
+    sf.write(filepath, signal, sampling_rate, subtype="PCM_16")
