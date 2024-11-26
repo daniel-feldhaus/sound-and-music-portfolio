@@ -259,7 +259,10 @@ def main():
     for chord_root in chord_loop:
         notes = pick_notes(chord_root - 1)
         melody = np.concatenate(
-            [make_note(note_offset + melody_root, beat_samples, args.samplerate) for note_offset in notes]
+            [
+                make_note(note_offset + melody_root, beat_samples, args.samplerate)
+                for note_offset in notes
+            ]
         )
 
         bass_note = note_to_key_offset(chord_root - 1)
