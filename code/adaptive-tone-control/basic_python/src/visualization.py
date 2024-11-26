@@ -1,4 +1,4 @@
-"""This module is for visualization of a sound signal."""
+"""Module for visualization of a sound signal."""
 
 import numpy as np
 import librosa
