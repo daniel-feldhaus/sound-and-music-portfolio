@@ -10,7 +10,7 @@ import argparse
 import random
 import re
 import wave
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Literal
 from dataclasses import dataclass
 
 import numpy as np
@@ -19,6 +19,7 @@ import sounddevice as sd
 # 11 canonical note names.
 names: List[str] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 note_names: Dict[str, int] = {note_name: index for index, note_name in enumerate(names)}
+
 # Relative notes of a major scale.
 MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
 
@@ -97,6 +98,7 @@ def parse_db(db_string: str) -> float:
         raise ValueError(f"Gain must be negative in decibels: received {db_value}") from None
     return 10 ** (db_value / 20)
 
+
 def parse_chord_loop(chord_loop_str: str) -> List[int]:
     """Parse a comma-separated string of chord roots into a list of integers."""
     if not chord_loop_str:
@@ -155,15 +157,29 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
     return notes
 
 
-def make_note(key: int, beat_samples: int, samplerate: int, duration_beats: int = 1) -> np.ndarray:
+def make_note(
+    key: int,
+    beat_samples: int,
+    samplerate: int,
+    duration_beats: int = 1,
+    waveform: Literal["sine","sawtooth"] = "sine",
+) -> np.ndarray:
     """Given a MIDI key number and an optional number of beats of
-    note duration, return a sine wave for that note.
+    note duration, return the specified waveform for that note.
     """
     frequency: float = 440 * 2 ** ((key - 69) / 12)
     sample_count: int = beat_samples * duration_beats
     cycles: float = 2 * np.pi * frequency * sample_count / samplerate
     time_points: np.ndarray = np.linspace(0, cycles, sample_count, endpoint=False)
-    return np.sin(time_points)
+
+    match waveform:
+        case "sine":
+            return np.sin(time_points)
+        case "sawtooth":
+            # Generate sawtooth waveform using a simple formula
+            # Sawtooth wave ranges from -1 to 1 over each period
+            return 2 * (time_points / (2 * np.pi) - np.floor(0.5 + time_points / (2 * np.pi)))
+    raise ValueError(f"Unsupported waveform type: '{waveform}'.")
 
 
 def play(sound: np.ndarray, samplerate: int) -> None:
@@ -226,6 +242,7 @@ class Args:
     output: str
     test: bool
     chord_loop: List[int]
+    waveform: str
 
 
 def parse_args() -> Args:
@@ -246,6 +263,14 @@ def parse_args() -> Args:
         help="Comma-separated list of chord roots in scale tones (one-based).",
     )
 
+    ap.add_argument(
+        "--waveform",
+        type=str,
+        choices=["sine", "sawtooth"],
+        default="sine",
+        help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth'.",
+    )
+
     parsed_args = ap.parse_args()
     args = Args(
         bpm=parsed_args.bpm,
@@ -257,6 +282,7 @@ def parse_args() -> Args:
         output=parsed_args.output,
         test=parsed_args.test,
         chord_loop=parsed_args.chord_loop,
+        waveform=parsed_args.waveform,  # Assigning the parsed waveform
     )
     return args
 
@@ -279,13 +305,24 @@ def main():
         notes = pick_notes(chord_root - 1)
         melody = np.concatenate(
             [
-                make_note(note_offset + melody_root, beat_samples, args.samplerate)
+                make_note(
+                    note_offset + melody_root,
+                    beat_samples,
+                    args.samplerate,
+                    waveform=args.waveform,
+                )
                 for note_offset in notes
             ]
         )
 
         bass_note = note_to_key_offset(chord_root - 1)
-        bass = make_note(bass_note + bass_root, beat_samples, args.samplerate, duration_beats=4)
+        bass = make_note(
+            bass_note + bass_root,
+            beat_samples,
+            args.samplerate,
+            duration_beats=4,
+            waveform=args.waveform,
+        )
 
         melody_gain: float = args.balance
         bass_gain = 1 - melody_gain
