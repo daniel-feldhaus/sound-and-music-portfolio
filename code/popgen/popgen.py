@@ -217,33 +217,37 @@ if args.test:
 
     exit(0)
 
-# Stitch together a waveform for the desired music.
-sound: np.ndarray = np.array([], dtype=np.float64)
-for chord_root in chord_loop:
-    notes = pick_notes(chord_root - 1)
-    melody = np.concatenate(
-        [make_note(note_offset + melody_root) for note_offset in notes]
-    )
+def main():
+    """Stitch together a waveform for the desired music."""
+    sound: np.ndarray = np.array([], dtype=np.float64)
+    for chord_root in chord_loop:
+        notes = pick_notes(chord_root - 1)
+        melody = np.concatenate(
+            [make_note(note_offset + melody_root) for note_offset in notes]
+        )
 
-    bass_note = note_to_key_offset(chord_root - 1)
-    bass = make_note(bass_note + bass_root, duration_beats=4)
+        bass_note = note_to_key_offset(chord_root - 1)
+        bass = make_note(bass_note + bass_root, duration_beats=4)
 
-    melody_gain: float = args.balance
-    bass_gain = 1 - melody_gain
+        melody_gain: float = args.balance
+        bass_gain = 1 - melody_gain
 
-    sound = np.append(sound, melody_gain * melody + bass_gain * bass)
+        sound = np.append(sound, melody_gain * melody + bass_gain * bass)
 
-# Save or play the generated "music".
-if args.output:
-    output = wave.open(args.output, "wb")
-    output.setnchannels(1)
-    output.setsampwidth(2)
-    output.setframerate(samplerate)
-    output.setnframes(len(sound))
+    # Save or play the generated "music".
+    if args.output:
+        output = wave.open(args.output, "wb")
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(samplerate)
+        output.setnframes(len(sound))
 
-    data = args.gain * 32767 * sound.clip(-1, 1)
-    output.writeframesraw(data.astype(np.int16))
+        data = args.gain * 32767 * sound.clip(-1, 1)
+        output.writeframesraw(data.astype(np.int16))
 
-    output.close()
-else:
-    play(args.gain * sound)
+        output.close()
+    else:
+        play(args.gain * sound)
+
+if __name__ == "__main__":
+    main()
