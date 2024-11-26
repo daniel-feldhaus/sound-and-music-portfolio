@@ -19,6 +19,11 @@ import sounddevice as sd
 # 11 canonical note names.
 names: List[str] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 note_names: Dict[str, int] = {note_name: index for index, note_name in enumerate(names)}
+# Relative notes of a major scale.
+MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
+
+# Major chord scale tones — one-based.
+MAJOR_CHORD = [1, 3, 5]
 
 # Regular expression for parsing note names.
 note_name_re = re.compile(r"([A-G]b?)(\[([0-8])\])?")
@@ -92,12 +97,24 @@ def parse_db(db_string: str) -> float:
         raise ValueError(f"Gain must be negative in decibels: received {db_value}") from None
     return 10 ** (db_value / 20)
 
+def parse_chord_loop(chord_loop_str: str) -> List[int]:
+    """Parse a comma-separated string of chord roots into a list of integers."""
+    if not chord_loop_str:
+        raise ValueError("Chord loop string cannot be empty.")
 
-# Relative notes of a major scale.
-MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
+    try:
+        # Split the string by commas, strip whitespace, and convert to integers
+        chord_loop = [int(chord.strip()) for chord in chord_loop_str.split(",") if chord.strip()]
+    except ValueError as e:
+        raise ValueError(
+            f"Invalid chord loop format: '{chord_loop_str}'. "
+            "Ensure it is a comma-separated list of integers, e.g., '8,5,6,4'."
+        ) from e
 
-# Major chord scale tones — one-based.
-MAJOR_CHORD = [1, 3, 5]
+    if not chord_loop:
+        raise ValueError("Chord loop cannot be empty after parsing.")
+
+    return chord_loop
 
 
 def note_to_key_offset(note: int) -> int:
@@ -112,12 +129,6 @@ def chord_to_note_offset(posn: int) -> int:
     """Given a position within a chord, return a scale note offset — zero-based."""
     chord_posn: int = posn % 3
     return posn // 3 * 7 + MAJOR_CHORD[chord_posn] - 1
-
-
-# Root note offset for each chord in scale tones — one-based.
-chord_loop = [8, 5, 6, 4]
-
-pos = 0
 
 
 def pick_notes(chord_root: int, n: int = 4) -> List[int]:
@@ -202,7 +213,6 @@ def test():
             f"{chord_pos} {expected_note_offset} {computed_note_offset}"
         )
 
-
 @dataclass
 class Args:
     """Command line arguments."""
@@ -214,6 +224,7 @@ class Args:
     gain: float
     output: str
     test: bool
+    chord_loop: List[int]
 
 
 def parse_args() -> Args:
@@ -227,8 +238,14 @@ def parse_args() -> Args:
     ap.add_argument("--gain", type=parse_db, default="-3")
     ap.add_argument("--output")
     ap.add_argument("--test", action="store_true", help=argparse.SUPPRESS)
-    parsed_args = ap.parse_args()
+    ap.add_argument(
+        "--chord-loop",
+        type=parse_chord_loop,
+        default="8,5,6,4",
+        help="Comma-separated list of chord roots in scale tones (one-based).",
+    )
 
+    parsed_args = ap.parse_args()
     args = Args(
         bpm=parsed_args.bpm,
         samplerate=parsed_args.samplerate,
@@ -238,6 +255,7 @@ def parse_args() -> Args:
         gain=parsed_args.gain,
         output=parsed_args.output,
         test=parsed_args.test,
+        chord_loop=parsed_args.chord_loop,
     )
     return args
 
@@ -256,7 +274,7 @@ def main():
     bass_root: int = melody_root - 12 * args.bass_octave
 
     sound: np.ndarray = np.array([], dtype=np.float64)
-    for chord_root in chord_loop:
+    for chord_root in args.chord_loop:
         notes = pick_notes(chord_root - 1)
         melody = np.concatenate(
             [
