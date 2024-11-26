@@ -1,3 +1,11 @@
+"""Pop Music Generator
+
+This script puts out four bars in the "Axis Progression" chord loop,
+with a melody and bass line.
+
+Author: Bart Massey, 2024
+"""
+
 import argparse
 import random
 import re
@@ -11,14 +19,17 @@ import sounddevice as sd
 names: List[str] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
 note_names: Dict[str, int] = {note_name: index for index, note_name in enumerate(names)}
 
-# Turn a note name into a corresponding MIDI key number.
-# Format is name with optional bracketed octave, for example
-# "D" or "Eb[5]". Default is octave 4 if no octave is
-# specified.
+# Regular expression for parsing note names.
 note_name_re = re.compile(r"([A-G]b?)(\[([0-8])\])?")
 
 
 def parse_note(note_string: str) -> int:
+    """Turn a note name into a corresponding MIDI key number.
+
+    Format is name with optional bracketed octave, for example
+    "D" or "Eb[5]". Default is octave 4 if no octave is
+    specified.
+    """
     match = note_name_re.fullmatch(note_string)
     if match is None:
         raise ValueError
@@ -30,11 +41,13 @@ def parse_note(note_string: str) -> int:
     return note_names[note_name] + 12 * octave
 
 
-# Given a string representing a knob setting between 0 and
-# 10 inclusive, return a linear gain value between 0 and 1
-# inclusive. The input is treated as decibels, with 10 being
-# 0dB and 0 being the specified `db_at_zero` decibels.
 def parse_log_knob(knob_setting: str, db_at_zero: float = -40) -> float:
+    """Given a string representing a knob setting between 0 and 10 inclusive,
+    return a linear gain value between 0 and 1 inclusive.
+
+    The input is treated as decibels, with 10 being 0dB and 0 being the
+    specified `db_at_zero` decibels.
+    """
     value = float(knob_setting)
     if value < 0 or value > 10:
         raise ValueError
@@ -45,20 +58,22 @@ def parse_log_knob(knob_setting: str, db_at_zero: float = -40) -> float:
     return 10 ** (-db_at_zero * (value - 10) / 200)
 
 
-# Given a string representing a knob setting between 0 and
-# 10 inclusive, return a linear gain value between 0 and 1
-# inclusive.
 def parse_linear_knob(knob_setting: str) -> float:
+    """Given a string representing a knob setting between 0 and 10 inclusive,
+    return a linear gain value between 0 and 1 inclusive.
+    """
     value = float(knob_setting)
     if value < 0 or value > 10:
         raise ValueError
     return value / 10
 
 
-# Given a string representing a gain in decibels, return a
-# linear gain value in the interval (0,1]. The input gain
-# must be negative.
 def parse_db(db_string: str) -> float:
+    """Given a string representing a gain in decibels, return a
+    linear gain value in the interval (0,1].
+
+    The input gain must be negative.
+    """
     db_value = float(db_string)
     if db_value > 0:
         raise ValueError
@@ -92,16 +107,16 @@ major_scale = [0, 2, 4, 5, 7, 9, 11]
 major_chord = [1, 3, 5]
 
 
-# Given a scale note with root note 0, return a key offset
-# from the corresponding root MIDI key.
 def note_to_key_offset(note: int) -> int:
+    """Given a scale note with root note 0, return a key offset
+    from the corresponding root MIDI key.
+    """
     scale_degree: int = note % 7
     return note // 7 * 12 + major_scale[scale_degree]
 
 
-# Given a position within a chord, return a scale note
-# offset — zero-based.
 def chord_to_note_offset(posn: int) -> int:
+    """Given a position within a chord, return a scale note offset — zero-based."""
     chord_posn: int = posn % 3
     return posn // 3 * 7 + major_chord[chord_posn] - 1
 
@@ -119,6 +134,10 @@ pos = 0
 
 
 def pick_notes(chord_root: int, n: int = 4) -> List[int]:
+    """Pick a sequence of notes for the melody line based on the chord root.
+
+    The sequence length is determined by `n`.
+    """
     global pos
     current_pos = pos
 
@@ -136,9 +155,11 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
     pos = current_pos
     return notes
 
-# Given a MIDI key number and an optional number of beats of
-# note duration, return a sine wave for that note.
+
 def make_note(key: int, duration_beats: int = 1) -> np.ndarray:
+    """Given a MIDI key number and an optional number of beats of
+    note duration, return a sine wave for that note.
+    """
     frequency: float = 440 * 2 ** ((key - 69) / 12)
     sample_count: int = beat_samples * duration_beats
     cycles: float = 2 * np.pi * frequency * sample_count / samplerate
@@ -146,8 +167,8 @@ def make_note(key: int, duration_beats: int = 1) -> np.ndarray:
     return np.sin(time_points)
 
 
-# Play the given sound waveform using `sounddevice`.
 def play(sound: np.ndarray) -> None:
+    """Play the given sound waveform using `sounddevice`."""
     sd.play(sound, samplerate=samplerate, blocking=True)
 
 
