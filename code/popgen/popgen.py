@@ -33,7 +33,7 @@ def parse_note(note_string: str) -> int:
     """
     match = note_name_re.fullmatch(note_string)
     if match is None:
-        raise ValueError
+        raise ValueError(f"Invalid note format: '{note_string}'") from None
     note_name = match[1]
     note_name = note_name[0].upper() + note_name[1:]
     octave = 4
@@ -49,13 +49,17 @@ def parse_log_knob(knob_setting: str, db_at_zero: float = -40) -> float:
     The input is treated as decibels, with 10 being 0dB and 0 being the
     specified `db_at_zero` decibels.
     """
-    value = float(knob_setting)
+    try:
+        value = float(knob_setting)
+    except ValueError as e:
+        raise ValueError(f"Knob setting must be a number between 0 and 10: '{knob_setting}'") from e
+
     if value < 0 or value > 10:
-        raise ValueError
+        raise ValueError(f"Knob setting must be between 0 and 10: received {value}") from None
     if value < 0.1:
-        return 0
+        return 0.0
     if value > 9.9:
-        return 10
+        return 10.0
     return 10 ** (-db_at_zero * (value - 10) / 200)
 
 
@@ -63,9 +67,13 @@ def parse_linear_knob(knob_setting: str) -> float:
     """Given a string representing a knob setting between 0 and 10 inclusive,
     return a linear gain value between 0 and 1 inclusive.
     """
-    value = float(knob_setting)
+    try:
+        value = float(knob_setting)
+    except ValueError as e:
+        raise ValueError(f"Knob setting must be a number between 0 and 10: '{knob_setting}'") from e
+
     if value < 0 or value > 10:
-        raise ValueError
+        raise ValueError(f"Knob setting must be between 0 and 10: received {value}") from None
     return value / 10
 
 
@@ -75,10 +83,15 @@ def parse_db(db_string: str) -> float:
 
     The input gain must be negative.
     """
-    db_value = float(db_string)
+    try:
+        db_value = float(db_string)
+    except ValueError as e:
+        raise ValueError(f"Gain must be a negative number in decibels: '{db_string}'") from e
+
     if db_value > 0:
-        raise ValueError
+        raise ValueError(f"Gain must be negative in decibels: received {db_value}") from None
     return 10 ** (db_value / 20)
+
 
 # Relative notes of a major scale.
 MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
@@ -99,7 +112,6 @@ def chord_to_note_offset(posn: int) -> int:
     """Given a position within a chord, return a scale note offset — zero-based."""
     chord_posn: int = posn % 3
     return posn // 3 * 7 + MAJOR_CHORD[chord_posn] - 1
-
 
 
 # Root note offset for each chord in scale tones — one-based.
@@ -123,22 +135,22 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
         notes.append(chord_note)
 
         if random.random() > 0.5:
-            current_pos = current_pos + 1
+            current_pos += 1
         else:
-            current_pos = current_pos - 1
+            current_pos -= 1
 
     pos = current_pos
     return notes
 
 
-def make_note(key: int, beat_samples: int, samplerate: int, duration_beats: int = 1, ) -> np.ndarray:
+def make_note(key: int, beat_samples: int, samplerate: int, duration_beats: int = 1) -> np.ndarray:
     """Given a MIDI key number and an optional number of beats of
     note duration, return a sine wave for that note.
     """
     frequency: float = 440 * 2 ** ((key - 69) / 12)
     sample_count: int = beat_samples * duration_beats
     cycles: float = 2 * np.pi * frequency * sample_count / samplerate
-    time_points: np.ndarray = np.linspace(0, cycles, sample_count)
+    time_points: np.ndarray = np.linspace(0, cycles, sample_count, endpoint=False)
     return np.sin(time_points)
 
 
@@ -190,6 +202,7 @@ def test():
             f"{chord_pos} {expected_note_offset} {computed_note_offset}"
         )
 
+
 @dataclass
 class Args:
     """Command line arguments."""
@@ -201,6 +214,7 @@ class Args:
     gain: float
     output: str
     test: bool
+
 
 def parse_args() -> Args:
     """Parse command line arguments into a typed object."""
@@ -258,18 +272,22 @@ def main():
 
     # Save or play the generated "music".
     if args.output:
-        output = wave.open(args.output, "wb")
-        output.setnchannels(1)
-        output.setsampwidth(2)
-        output.setframerate(args.samplerate)
-        output.setnframes(len(sound))
+        try:
+            output = wave.open(args.output, "wb")
+            output.setnchannels(1)
+            output.setsampwidth(2)
+            output.setframerate(args.samplerate)
+            output.setnframes(len(sound))
 
-        data = args.gain * 32767 * sound.clip(-1, 1)
-        output.writeframesraw(data.astype(np.int16))
+            data = args.gain * 32767 * sound.clip(-1, 1)
+            output.writeframesraw(data.astype(np.int16))
 
-        output.close()
+            output.close()
+        except Exception as e:
+            raise RuntimeError(f"Failed to write to output file '{args.output}'") from e
     else:
         play(args.gain * sound, args.samplerate)
+
 
 if __name__ == "__main__":
     main()
