@@ -168,6 +168,43 @@ def make_kick(
 
     return kick
 
+def make_snare(
+    samplerate: int,
+    duration: float = 0.2,        # Duration of the snare in seconds
+    attack_time: float = 0.005,   # Attack time in seconds
+    release_time: float = 0.1     # Release time in seconds
+) -> np.ndarray:
+    """Generate a snare drum sound using white noise and an envelope.
+
+    Args:
+        samplerate (int): The audio sample rate.
+        duration (float): Total duration of the snare sound in seconds.
+        attack_time (float): Duration of the attack phase in seconds.
+        release_time (float): Duration of the release phase in seconds.
+
+    Returns:
+        np.ndarray: The generated snare drum waveform.
+    """
+    # Calculate the number of samples for the snare
+    sample_count = int(samplerate * duration)
+
+    # Generate white noise
+    noise = np.random.normal(0, 1, sample_count)
+
+    # Create an envelope using the existing make_envelope function
+    envelope = make_envelope(
+        samplerate=samplerate,
+        sample_count=sample_count,
+        attack_time=attack_time,
+        release_time=release_time,
+    )
+
+    # Apply the envelope to the noise to shape the snare
+    snare = noise * envelope
+
+    return snare
+
+
 
 def make_rhythm(
     pattern: str,
@@ -191,28 +228,29 @@ def make_rhythm(
     rhythm = np.zeros(beat_samples * len(pattern))
 
     for i, char in enumerate(pattern):
+        # Calculate the insertion point in the rhythm array
+        start_idx = i * beat_samples
         if char.lower() == "k":
-            # Generate a kick drum sound
             kick = make_kick(
                 samplerate=samplerate,
                 duration=0.1,
                 attack_time=0.005,
                 release_time=0.05
             )
+            end_idx = min(start_idx + len(kick), len(rhythm))
 
-            # Calculate the insertion point in the rhythm array
-            start_idx = i * beat_samples
-            end_idx = start_idx + len(kick)
-
-            # Ensure we don't exceed the array bounds
-            if end_idx > len(rhythm):
-                end_idx = len(rhythm)
-                kick = kick[: end_idx - start_idx]
-
-            # Insert the kick into the rhythm track with specified volume
-            rhythm[start_idx:end_idx] += kick * rhythm_volume
-        # For '_', do nothing (silence)
-
+            rhythm[start_idx:end_idx] += (kick * rhythm_volume)[: end_idx - start_idx]
+        elif char.lower() == "s":
+            snare = make_snare(
+                samplerate,
+                duration=0.2,
+                attack_time=0.005,
+                release_time=0.1
+            )
+            end_idx = min(start_idx + len(snare), len(rhythm))
+            rhythm[start_idx:end_idx] += (snare * rhythm_volume)[: end_idx - start_idx]
+        elif char != "_":
+            raise ValueError(f"Unexpected rythm character '{char}'")
     # Normalize to prevent clipping
     max_val = np.max(np.abs(rhythm))
     if max_val > 1:
