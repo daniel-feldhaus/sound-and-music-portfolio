@@ -15,6 +15,7 @@ note_names: Dict[str, int] = {note_name: index for index, note_name in enumerate
 class Args:
     """Command line arguments."""
     bpm: int
+    rhythm_bpm: int
     samplerate: int
     root: int
     bass_octave: int
@@ -32,6 +33,7 @@ def parse_args() -> Args:
     """Parse command line arguments into a typed object."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--bpm", type=int, default=90)
+    ap.add_argument("--rhythm-bpm", default=None)
     ap.add_argument("--samplerate", type=int, default=48000)
     ap.add_argument("--root", type=parse_note, default="C[5]")
     ap.add_argument("--bass-octave", type=int, default=2)
@@ -74,6 +76,7 @@ def parse_args() -> Args:
     parsed_args = ap.parse_args()
     args = Args(
         bpm=parsed_args.bpm,
+        rhythm_bpm=int(parsed_args.rhythm_bpm) if parsed_args.rhythm_bpm else parsed_args.bpm,
         samplerate=parsed_args.samplerate,
         root=parsed_args.root,
         bass_octave=parsed_args.bass_octave,

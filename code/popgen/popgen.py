@@ -313,9 +313,11 @@ def main():
     args = parse_args()
     if args.test:
         test()
+
         return
     # Samples per beat.
     beat_samples = int(np.round(args.samplerate / (args.bpm / 60)))
+    rhythm_beat_samples = int(np.round(args.samplerate / (args.rhythm_bpm / 60)))
     # MIDI key where melody goes.
     melody_root: int = args.root
     # Bass MIDI key is below melody root.
@@ -353,16 +355,19 @@ def main():
     # Generate rhythm track
     rhythm = make_rhythm(
         pattern=args.rhythm_pattern,
-        beat_samples=beat_samples,
+        beat_samples=rhythm_beat_samples,
         samplerate=args.samplerate,
         rhythm_volume=args.rhythm_volume,
     )
 
-    # Ensure rhythm length matches the sound length
+    # Loop the rhythm to match the sound length
     if len(rhythm) < len(sound):
-        rhythm = np.pad(rhythm, (0, len(sound) - len(rhythm)), 'constant')
-    elif len(rhythm) > len(sound):
-        rhythm = rhythm[:len(sound)]
+        # Calculate the number of times to repeat the rhythm pattern
+        num_repeats = int(np.ceil(len(sound) / len(rhythm)))
+        # Repeat the rhythm pattern
+        rhythm = np.tile(rhythm, num_repeats)
+    # Trim the rhythm array to match the sound length exactly
+    rhythm = rhythm[:len(sound)]
 
     # Mix rhythm with existing sound
     combined_sound = sound + rhythm
