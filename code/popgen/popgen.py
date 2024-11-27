@@ -132,15 +132,13 @@ def chord_to_note_offset(posn: int) -> int:
     chord_posn: int = posn % 3
     return posn // 3 * 7 + MAJOR_CHORD[chord_posn] - 1
 
-pos: int = 0
 
 def pick_notes(chord_root: int, n: int = 4) -> List[int]:
     """Pick a sequence of notes for the melody line based on the chord root.
 
     The sequence length is determined by `n`.
     """
-    global pos
-    current_pos = pos
+    current_pos = 0
 
     notes: List[int] = []
     for _ in range(n):
@@ -153,7 +151,6 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
         else:
             current_pos -= 1
 
-    pos = current_pos
     return notes
 
 
