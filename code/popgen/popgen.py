@@ -157,18 +157,14 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
     return notes
 
 
-def make_note(
+def make_wave(
     key: int,
-    beat_samples: int,
+    sample_count: int,
     samplerate: int,
-    duration_beats: int = 1,
-    waveform: Literal["sine","sawtooth", "square"] = "sine",
-) -> np.ndarray:
-    """Given a MIDI key number and an optional number of beats of
-    note duration, return the specified waveform for that note.
-    """
+    waveform: Literal["sine", "sawtooth", "square"],
+):
+    """Generate a signal with a given wave shape."""
     frequency: float = 440 * 2 ** ((key - 69) / 12)
-    sample_count: int = beat_samples * duration_beats
     cycles: float = 2 * np.pi * frequency * sample_count / samplerate
     time_points: np.ndarray = np.linspace(0, cycles, sample_count, endpoint=False)
 
@@ -176,14 +172,58 @@ def make_note(
         case "sine":
             return np.sin(time_points)
         case "sawtooth":
+            # Generate sawtooth waveform
             # Sawtooth wave ranges from -1 to 1 over each period
             return 2 * (time_points / (2 * np.pi) - np.floor(0.5 + time_points / (2 * np.pi)))
         case "square":
             # Generate square waveform using the sign of a sine wave
             return np.sign(np.sin(time_points))
-
-
     raise ValueError(f"Unsupported waveform type: '{waveform}'.")
+
+def make_envelope(
+    samplerate: int,
+    sample_count: int,
+    attack_time: float = 0.01,
+    release_time: float = 0.01,
+) -> np.ndarray:
+    """Generate an envelope to use for tapering audio amplitude."""
+    # Calculate the number of samples for attack and release
+    attack_samples = int(samplerate * attack_time)
+    release_samples = int(samplerate * release_time)
+
+    # Ensure that attack and release do not exceed the total sample count
+    if attack_samples + release_samples > sample_count:
+        attack_samples = release_samples = sample_count // 2
+
+    # Initialize the envelope with ones (sustain level)
+    envelope = np.ones(sample_count)
+
+    # Create the attack ramp (linear increase from 0 to 1)
+    if attack_samples > 0:
+        envelope[:attack_samples] = np.linspace(0, 1, attack_samples)
+
+    # Create the release ramp (linear decrease from 1 to 0)
+    if release_samples > 0:
+        envelope[-release_samples:] = np.linspace(1, 0, release_samples)
+
+    return envelope
+
+def make_note(
+    key: int,
+    beat_samples: int,
+    samplerate: int,
+    duration_beats: int = 1,
+    waveform: Literal["sine", "sawtooth", "square"] = "sine",
+) -> np.ndarray:
+    """Given a MIDI key number and an optional number of beats of
+    note duration, return the specified waveform for that note.
+    """
+    sample_count: int = beat_samples * duration_beats
+
+    wave_signal = make_wave(key, sample_count, samplerate, waveform)
+    envelope = make_envelope(samplerate, sample_count)
+    return wave_signal * envelope
+
 
 
 def play(sound: np.ndarray, samplerate: int) -> None:
