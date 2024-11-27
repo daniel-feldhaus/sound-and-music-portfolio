@@ -30,7 +30,7 @@ python popgen.py --rhythm-pattern "ks_ks_k_ks_ks_kk" --rhythm-volume 0.5
 
 Sawtooth and square waves can be set with the `--waveform` argument.
 
-Example
+Example:
 ```bash
 python popgen.py --waveform square
 ```
@@ -39,16 +39,34 @@ python popgen.py --waveform square
 
 The melody now wanders a set maximum distance from the origin. Instead of clamping the values, the probability of moving towards the center increases as the melody nears the edge. The maximum offset can be controlled with `--max-offset`
 
+Example:
 ```bash
 python popgen.py --max-offset 1
 ```
 
+### Allow rhythm patterns for the melody other than one note per beat.
+
+The rhythm pattern can be set to a separate BPM witth the `--rhythm-bpm` argument. If unset, the rhythm will default to the same bpm as the melody.
+
+Example:
+```bash
+python popgen.py   --bpm 120   --rhythm-bpm 240   --rhythm-pattern "k__s__k_"   --rhythm-volume 0.35   --waveform sine
+```
 # Demo
 
-Samples for the three wave types can be found here:
+Demos for the three wave types can be found here:
 * [Sawtooth](./demo_sawtooth.wav)
 * [Sine](./demo_sine.wav)
 * [Square](./demo_square.wav)
+
+An additional demo demonstrating a three/four time signature can be found at [demo_three_four.wav](./demo_three_four.wav).
+
+The three/four demo was generated using this command:
+```bash
+python popgen.py   --bpm 120   --rhythm-bpm 240   --rhythm-pattern "k__s__k_"   --rhythm-volume 0.35   --waveform sine   --outp
+ut demo_three_four.wav
+```
+
 
 # License
 
