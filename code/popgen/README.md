@@ -45,7 +45,10 @@ python popgen.py --max-offset 1
 
 # Demo
 
-A sample is available in [`demo.wav`](demo.wav).
+Samples for the three wave types can be found here:
+* [Sawtooth](./demo_sawtooth.wav)
+* [Sine](./demo_sine.wav)
+* [Square](./demo_square.wav)
 
 # License
 
