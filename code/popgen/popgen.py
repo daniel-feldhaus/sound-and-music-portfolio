@@ -133,7 +133,7 @@ def chord_to_note_offset(posn: int) -> int:
     return posn // 3 * 7 + MAJOR_CHORD[chord_posn] - 1
 
 
-def pick_notes(chord_root: int, n: int = 4) -> List[int]:
+def pick_notes(chord_root: int, n: int = 4, max_offset: int = 5) -> List[int]:
     """Pick a sequence of notes for the melody line based on the chord root.
 
     The sequence length is determined by `n`.
@@ -146,7 +146,11 @@ def pick_notes(chord_root: int, n: int = 4) -> List[int]:
         chord_note = note_to_key_offset(chord_root + chord_note_offset)
         notes.append(chord_note)
 
-        if random.random() > 0.5:
+        # The probability of moving upwards approaches 1 as the offset approaches -max_offset.
+        # Conversely, the probability approaches 0 as the offset approaches max_offset.
+        p_up = (current_pos + max_offset) / (2 * max_offset)
+
+        if random.random() > p_up:
             current_pos += 1
         else:
             current_pos -= 1
@@ -284,6 +288,7 @@ class Args:
     test: bool
     chord_loop: List[int]
     waveform: str
+    max_offset: int
 
 
 def parse_args() -> Args:
@@ -311,6 +316,7 @@ def parse_args() -> Args:
         default="sine",
         help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth', `square`.",
     )
+    ap.add_argument("--max-offset", type=int, default=6)
 
     parsed_args = ap.parse_args()
     args = Args(
@@ -324,6 +330,7 @@ def parse_args() -> Args:
         test=parsed_args.test,
         chord_loop=parsed_args.chord_loop,
         waveform=parsed_args.waveform,
+        max_offset=parsed_args.max_offset
     )
     return args
 
@@ -343,7 +350,7 @@ def main():
 
     sound: np.ndarray = np.array([], dtype=np.float64)
     for chord_root in args.chord_loop:
-        notes = pick_notes(chord_root - 1)
+        notes = pick_notes(chord_root - 1, max_offset=args.max_offset)
         melody = np.concatenate(
             [
                 make_note(
