@@ -162,7 +162,7 @@ def make_note(
     beat_samples: int,
     samplerate: int,
     duration_beats: int = 1,
-    waveform: Literal["sine","sawtooth"] = "sine",
+    waveform: Literal["sine","sawtooth", "square"] = "sine",
 ) -> np.ndarray:
     """Given a MIDI key number and an optional number of beats of
     note duration, return the specified waveform for that note.
@@ -176,9 +176,13 @@ def make_note(
         case "sine":
             return np.sin(time_points)
         case "sawtooth":
-            # Generate sawtooth waveform using a simple formula
             # Sawtooth wave ranges from -1 to 1 over each period
             return 2 * (time_points / (2 * np.pi) - np.floor(0.5 + time_points / (2 * np.pi)))
+        case "square":
+            # Generate square waveform using the sign of a sine wave
+            return np.sign(np.sin(time_points))
+
+
     raise ValueError(f"Unsupported waveform type: '{waveform}'.")
 
 
@@ -266,9 +270,9 @@ def parse_args() -> Args:
     ap.add_argument(
         "--waveform",
         type=str,
-        choices=["sine", "sawtooth"],
+        choices=["sine", "sawtooth", "square"],
         default="sine",
-        help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth'.",
+        help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth', `square`.",
     )
 
     parsed_args = ap.parse_args()
@@ -282,7 +286,7 @@ def parse_args() -> Args:
         output=parsed_args.output,
         test=parsed_args.test,
         chord_loop=parsed_args.chord_loop,
-        waveform=parsed_args.waveform,  # Assigning the parsed waveform
+        waveform=parsed_args.waveform,
     )
     return args
 
