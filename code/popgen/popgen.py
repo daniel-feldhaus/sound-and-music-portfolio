@@ -1,7 +1,7 @@
 """Pop Music Generator
 
 This script puts out four bars in the "Axis Progression" chord loop,
-with a melody and bass line.
+with a melody, bass line, and rhythm track.
 
 Author: Bart Massey, 2024
 """
@@ -85,6 +85,7 @@ def make_wave(
             return np.sign(np.sin(time_points))
     raise ValueError(f"Unsupported waveform type: '{waveform}'.")
 
+
 def make_envelope(
     samplerate: int,
     sample_count: int,
@@ -113,6 +114,7 @@ def make_envelope(
 
     return envelope
 
+
 def make_note(
     key: int,
     beat_samples: int,
@@ -129,6 +131,94 @@ def make_note(
     envelope = make_envelope(samplerate, sample_count)
     return wave_signal * envelope
 
+
+def make_kick(
+    samplerate: int,
+    duration: float = 0.1,
+    attack_time: float = 0.005,
+    release_time: float = 0.05,
+) -> np.ndarray:
+    """Generate a kick drum sound using white noise and an envelope.
+
+    Args:
+        samplerate (int): The audio sample rate.
+        duration (float): Total duration of the kick sound in seconds.
+        attack_time (float): Duration of the attack phase in seconds.
+        release_time (float): Duration of the release phase in seconds.
+
+    Returns:
+        np.ndarray: The generated kick drum waveform.
+    """
+    # Calculate the number of samples for the kick
+    sample_count = int(samplerate * duration)
+
+    # Generate white noise
+    noise = np.random.normal(0, 1, sample_count)
+
+    # Create an envelope using the existing make_envelope function
+    envelope = make_envelope(
+        samplerate=samplerate,
+        sample_count=sample_count,
+        attack_time=attack_time,
+        release_time=release_time,
+    )
+
+    # Apply the envelope to the noise to shape the kick
+    kick = noise * envelope
+
+    return kick
+
+
+def make_rhythm(
+    pattern: str,
+    beat_samples: int,
+    samplerate: int,
+    rhythm_volume: float,
+) -> np.ndarray:
+    """Generate a rhythm track based on the specified pattern using kick drum samples.
+
+    'k' represents a kick drum, and '_' represents silence.
+
+    Args:
+        pattern (str): Rhythm pattern string (e.g., "k___k___k___k___").
+        beat_samples (int): Number of samples per beat.
+        samplerate (int): Audio sample rate.
+        rhythm_volume (float): Volume level for the rhythm track (0.0 to 1.0).
+
+    Returns:
+        np.ndarray: The generated rhythm track waveform.
+    """
+    rhythm = np.zeros(beat_samples * len(pattern))
+
+    for i, char in enumerate(pattern):
+        if char.lower() == "k":
+            # Generate a kick drum sound
+            kick = make_kick(
+                samplerate=samplerate,
+                duration=0.1,
+                attack_time=0.005,
+                release_time=0.05
+            )
+
+            # Calculate the insertion point in the rhythm array
+            start_idx = i * beat_samples
+            end_idx = start_idx + len(kick)
+
+            # Ensure we don't exceed the array bounds
+            if end_idx > len(rhythm):
+                end_idx = len(rhythm)
+                kick = kick[: end_idx - start_idx]
+
+            # Insert the kick into the rhythm track with specified volume
+            rhythm[start_idx:end_idx] += kick * rhythm_volume
+        # For '_', do nothing (silence)
+
+    # Normalize to prevent clipping
+    max_val = np.max(np.abs(rhythm))
+    if max_val > 1:
+        rhythm = rhythm / max_val
+
+    return rhythm
 
 
 def play(sound: np.ndarray, samplerate: int) -> None:
@@ -222,6 +312,28 @@ def main():
 
         sound = np.append(sound, melody_gain * melody + bass_gain * bass)
 
+    # Generate rhythm track
+    rhythm = make_rhythm(
+        pattern=args.rhythm_pattern,
+        beat_samples=beat_samples,
+        samplerate=args.samplerate,
+        rhythm_volume=args.rhythm_volume,
+    )
+
+    # Ensure rhythm length matches the sound length
+    if len(rhythm) < len(sound):
+        rhythm = np.pad(rhythm, (0, len(sound) - len(rhythm)), 'constant')
+    elif len(rhythm) > len(sound):
+        rhythm = rhythm[:len(sound)]
+
+    # Mix rhythm with existing sound
+    combined_sound = sound + rhythm
+
+    # Normalize the combined sound to prevent clipping
+    max_val = np.max(np.abs(combined_sound))
+    if max_val > 1:
+        combined_sound = combined_sound / max_val
+
     # Save or play the generated "music".
     if args.output:
         try:
@@ -229,16 +341,15 @@ def main():
             output.setnchannels(1)
             output.setsampwidth(2)
             output.setframerate(args.samplerate)
-            output.setnframes(len(sound))
-
-            data = args.gain * 32767 * sound.clip(-1, 1)
-            output.writeframesraw(data.astype(np.int16))
+            # Convert float array to int16
+            data = (combined_sound * args.gain * 32767).astype(np.int16)
+            output.writeframes(data.tobytes())
 
             output.close()
         except Exception as e:
             raise RuntimeError(f"Failed to write to output file '{args.output}'") from e
     else:
-        play(args.gain * sound, args.samplerate)
+        play(combined_sound * args.gain, args.samplerate)
 
 
 if __name__ == "__main__":

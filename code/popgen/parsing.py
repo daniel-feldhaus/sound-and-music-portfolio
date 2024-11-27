@@ -25,13 +25,14 @@ class Args:
     chord_loop: List[int]
     waveform: str
     max_offset: int
-
+    rhythm_pattern: str
+    rhythm_volume: float
 
 def parse_args() -> Args:
     """Parse command line arguments into a typed object."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--bpm", type=int, default=90)
-    ap.add_argument("--samplerate", type=int, default=48_000)
+    ap.add_argument("--samplerate", type=int, default=48000)
     ap.add_argument("--root", type=parse_note, default="C[5]")
     ap.add_argument("--bass-octave", type=int, default=2)
     ap.add_argument("--balance", type=parse_linear_knob, default="5")
@@ -44,15 +45,31 @@ def parse_args() -> Args:
         default="8,5,6,4",
         help="Comma-separated list of chord roots in scale tones (one-based).",
     )
-
     ap.add_argument(
         "--waveform",
         type=str,
         choices=["sine", "sawtooth", "square"],
         default="sine",
-        help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth', `square`.",
+        help="Type of waveform to use for note generation. Choices: 'sine', 'sawtooth', 'square'.",
     )
-    ap.add_argument("--max-offset", type=int, default=6)
+    ap.add_argument(
+        "--max-offset",
+        type=int,
+        default=5,
+        help="Maximum offset for melody note picking to constrain the melody range.",
+    )
+    ap.add_argument(
+        "--rhythm-pattern",
+        type=str,
+        default="k___k___k___k___",
+        help='Rhythm pattern using "k" for kick and "_" for silence, e.g., "k__k__k__k__".',
+    )
+    ap.add_argument(
+        "--rhythm-volume",
+        type=float,
+        default=0.3,
+        help="Volume level for the rhythm track (0.0 to 1.0).",
+    )
 
     parsed_args = ap.parse_args()
     args = Args(
@@ -66,10 +83,11 @@ def parse_args() -> Args:
         test=parsed_args.test,
         chord_loop=parsed_args.chord_loop,
         waveform=parsed_args.waveform,
-        max_offset=parsed_args.max_offset
+        max_offset=parsed_args.max_offset,
+        rhythm_pattern=parsed_args.rhythm_pattern,
+        rhythm_volume=parsed_args.rhythm_volume,
     )
     return args
-
 
 def parse_note(note_string: str) -> int:
     """Turn a note name into a corresponding MIDI key number.
