@@ -1,0 +1,23 @@
+[tool.poetry]
+name = ""
+version = "0.1.0"
+description = "Interpolator"
+authors = ["Danny Love <danielov@pdx.edu"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "", from = "src" }]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
