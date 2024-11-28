@@ -1,0 +1,4 @@
+simpleaudio
+soundfile
+librosa
+numpy
