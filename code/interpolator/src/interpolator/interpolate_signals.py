@@ -1,9 +1,7 @@
-from typing import Tuple, List
+from typing import Tuple
 import librosa
 import numpy as np
-import parselmouth
-from parselmouth.praat import call
-from scipy.interpolate import interp1d
+from .formants import interpolate_formants
 
 
 def load_audio(file_path: str, sample_rate: int = None) -> Tuple[np.ndarray, int]:
@@ -19,53 +17,6 @@ def load_audio(file_path: str, sample_rate: int = None) -> Tuple[np.ndarray, int
     """
     audio, sr = librosa.load(file_path, sr=sample_rate)
     return audio, sr
-
-
-def extract_formants(audio: np.ndarray, sample_rate: int, duration: float) -> np.ndarray:
-    """
-    Extract formants from a given audio signal.
-
-    Args:
-        audio (np.ndarray): Audio signal.
-        sample_rate (int): Sampling rate of the audio signal.
-        duration (float): Duration for formant extraction.
-
-    Returns:
-        np.ndarray: Array of formant frequencies.
-    """
-    sound = parselmouth.Sound(audio, sampling_frequency=sample_rate)
-    formant = call(sound, "To Formant (burg)", 0.01, 5, 5500, 0.025, 50)
-    times = np.linspace(0, duration, len(audio))
-    formant_values: List[List[float]] = []
-
-    for i in range(5):  # Extract the first 5 formants
-        formant_values.append(
-            [
-                call(
-                    formant, "Get value at time", i + 1, t, "Hertz", "Linear"
-                )  # Add Interpolation argument
-                for t in times
-            ]
-        )
-
-    return np.array(formant_values)
-
-
-def interpolate_formants(
-    formants_a: np.ndarray, formants_b: np.ndarray, alpha: np.ndarray
-) -> np.ndarray:
-    """
-    Interpolate between two sets of formants.
-
-    Args:
-        formants_a (np.ndarray): Formants of the first signal.
-        formants_b (np.ndarray): Formants of the second signal.
-        alpha (np.ndarray): Interpolation factor.
-
-    Returns:
-        np.ndarray: Interpolated formants.
-    """
-    return (1 - alpha) * formants_a + alpha * formants_b
 
 
 def spectral_interpolation(
@@ -102,57 +53,6 @@ def spectral_interpolation(
 
     # Reconstruct the interpolated signal
     return librosa.istft(stft_interpolated)
-
-
-def apply_interpolated_formants(
-    audio: np.ndarray, formants: np.ndarray, sample_rate: int
-) -> np.ndarray:
-    """
-    Modify the signal spectrum to match the interpolated formants.
-
-    Args:
-        audio (np.ndarray): Input audio signal.
-        formants (np.ndarray): Interpolated formant frequencies.
-        sample_rate (int): Sampling rate of the audio signal.
-
-    Returns:
-        np.ndarray: Signal modified to match interpolated formants.
-    """
-    # Perform STFT
-    stft_audio = librosa.stft(audio)
-    magnitude, phase = np.abs(stft_audio), np.angle(stft_audio)
-
-    # Resample formants to match the STFT time resolution
-    num_stft_frames = magnitude.shape[1]
-    original_time = np.linspace(0, 1, formants.shape[1])
-    target_time = np.linspace(0, 1, num_stft_frames)
-    resampled_formants = np.zeros((formants.shape[0], num_stft_frames))
-
-    for i in range(formants.shape[0]):  # Resample each formant
-        interp_func = interp1d(original_time, formants[i], kind="linear", fill_value="extrapolate")
-        resampled_formants[i] = interp_func(target_time)
-
-    # Create a spectral envelope using the resampled formants
-    frequencies = np.linspace(0, sample_rate // 2, magnitude.shape[0])
-    envelope = np.zeros_like(magnitude)
-
-    for i, frame_formants in enumerate(resampled_formants.T):  # Iterate over time frames
-        for f in frame_formants:  # Iterate over formants
-            if not np.isnan(f) and f > 0:  # Skip invalid formants
-                # Add a Gaussian bump for each formant
-                envelope[:, i] += np.exp(-0.5 * ((frequencies - f) / 50) ** 2)
-
-    # Normalize envelope
-    envelope = envelope / np.max(envelope, axis=0, keepdims=True)
-
-    # Apply envelope to the magnitude spectrum
-    modified_magnitude = magnitude * envelope
-
-    # Reconstruct the signal
-    modified_stft = modified_magnitude * np.exp(1j * phase)
-    modified_audio = librosa.istft(modified_stft)
-
-    return modified_audio
 
 
 def interpolate_signals(
@@ -223,13 +123,7 @@ def interpolate_signals(
 
     # Perform formant interpolation
     if formant_interpolation:
-        formants_a = extract_formants(a_tail, sample_rate, duration)
-        formants_b = extract_formants(b_head, sample_rate, duration)
-        alpha = np.linspace(0, 1, formants_a.shape[1])
-        interpolated_formants = interpolate_formants(formants_a, formants_b, alpha)
-        interpolated_signal = apply_interpolated_formants(
-            a_tail, interpolated_formants, sample_rate
-        )
+        interpolated_signal = interpolate_formants(a_tail, b_head, interpolated_signal, sample_rate)
 
     # Combine with the original signals
     combined_signal = np.concatenate(
