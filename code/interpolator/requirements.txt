@@ -2,4 +2,5 @@ simpleaudio
 soundfile
 librosa
 numpy
-parselmouth
+praat-parselmouth
+tqdm
