@@ -2,3 +2,4 @@ simpleaudio
 soundfile
 librosa
 numpy
+parselmouth
