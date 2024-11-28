@@ -19,42 +19,6 @@ def load_audio(file_path: str, sample_rate: int = None) -> Tuple[np.ndarray, int
     return audio, sr
 
 
-def spectral_interpolation(
-    a_tail: np.ndarray, b_head: np.ndarray, overlap_samples: int
-) -> np.ndarray:
-    """
-    Perform spectral interpolation between two audio segments.
-
-    Args:
-        a_tail (np.ndarray): Tail segment of the first audio file.
-        b_head (np.ndarray): Head segment of the second audio file.
-        overlap_samples (int): Number of overlapping samples.
-
-    Returns:
-        np.ndarray: Reconstructed audio signal from the interpolated spectrum.
-    """
-    # Ensure input segments match the overlap_samples length
-    a_tail = a_tail[-overlap_samples:]
-    b_head = b_head[:overlap_samples]
-
-    # STFT on both segments
-    stft_a = librosa.stft(a_tail)
-    stft_b = librosa.stft(b_head)
-
-    # Extract magnitude and phase
-    mag_a, phase_a = np.abs(stft_a), np.angle(stft_a)
-    mag_b, phase_b = np.abs(stft_b), np.angle(stft_b)
-
-    # Interpolate magnitudes and phases
-    alpha = np.linspace(0, 1, mag_a.shape[1])[np.newaxis, :]
-    interpolated_mag = (1 - alpha) * mag_a + alpha * mag_b
-    interpolated_phase = (1 - alpha) * phase_a + alpha * phase_b
-    stft_interpolated = interpolated_mag * np.exp(1j * interpolated_phase)
-
-    # Reconstruct the interpolated signal
-    return librosa.istft(stft_interpolated)
-
-
 def interpolate_signals(
     file_a: str,
     file_b: str,
