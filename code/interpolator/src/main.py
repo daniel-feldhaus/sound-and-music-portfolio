@@ -28,6 +28,7 @@ def main():
         magnitude_interpolation=args.magnitude,
         phase_interpolation=args.phase,
         formant_interpolation=args.formant,
+        pitch_interpolation=True,
     )
 
     # Save or play the result

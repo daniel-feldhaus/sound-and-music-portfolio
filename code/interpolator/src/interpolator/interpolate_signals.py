@@ -1,6 +1,12 @@
 from typing import Tuple
 import librosa
 import numpy as np
+
+from interpolator.pitch import (
+    extract_pitch_contour,
+    interpolate_pitch_contours,
+    modify_pitch_with_world,
+)
 from .formants import interpolate_formants
 
 
@@ -26,6 +32,7 @@ def interpolate_signals(
     magnitude_interpolation: bool = False,
     phase_interpolation: bool = False,
     formant_interpolation: bool = False,
+    pitch_interpolation: bool = False,
 ) -> Tuple[np.ndarray, int]:
     """
     Interpolate between the end of file A and the beginning of file B.
@@ -88,6 +95,25 @@ def interpolate_signals(
     # Perform formant interpolation
     if formant_interpolation:
         interpolated_signal = interpolate_formants(a_tail, b_head, interpolated_signal, sample_rate)
+
+    if pitch_interpolation:
+        print("Performing pitch interpolation...")
+        # Frame parameters
+        frame_length = int(0.025 * sample_rate)  # 25 ms
+        hop_length = int(0.0125 * sample_rate)  # 12.5 ms
+        frame_period = (hop_length / sample_rate) * 1000  # in milliseconds
+
+        # Extract pitch contours
+        f0_a = extract_pitch_contour(a_tail, sample_rate, frame_length, hop_length)
+        f0_b = extract_pitch_contour(b_head, sample_rate, frame_length, hop_length)
+
+        # Interpolate pitch contours
+        f0_interpolated = interpolate_pitch_contours(f0_a, f0_b)
+
+        # Modify pitch of the overlapping segment
+        interpolated_signal = modify_pitch_with_world(
+            interpolated_signal, sample_rate, f0_interpolated, frame_period
+        )
 
     # Combine with the original signals
     combined_signal = np.concatenate(
