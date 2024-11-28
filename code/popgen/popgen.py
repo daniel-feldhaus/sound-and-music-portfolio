@@ -79,7 +79,9 @@ def make_wave(
         case "sawtooth":
             # Generate sawtooth waveform
             # Sawtooth wave ranges from -1 to 1 over each period
-            return 2 * (time_points / (2 * np.pi) - np.floor(0.5 + time_points / (2 * np.pi)))
+            return 2 * (
+                time_points / (2 * np.pi) - np.floor(0.5 + time_points / (2 * np.pi))
+            )
         case "square":
             # Generate square waveform using the sign of a sine wave
             return np.sign(np.sin(time_points))
@@ -168,11 +170,12 @@ def make_kick(
 
     return kick
 
+
 def make_snare(
     samplerate: int,
-    duration: float = 0.2,        # Duration of the snare in seconds
-    attack_time: float = 0.005,   # Attack time in seconds
-    release_time: float = 0.1     # Release time in seconds
+    duration: float = 0.2,
+    attack_time: float = 0.005,
+    release_time: float = 0.1,
 ) -> np.ndarray:
     """Generate a snare drum sound using white noise and an envelope.
 
@@ -205,7 +208,6 @@ def make_snare(
     return snare
 
 
-
 def make_rhythm(
     pattern: str,
     beat_samples: int,
@@ -235,17 +237,14 @@ def make_rhythm(
                 samplerate=samplerate,
                 duration=0.1,
                 attack_time=0.005,
-                release_time=0.05
+                release_time=0.05,
             )
             end_idx = min(start_idx + len(kick), len(rhythm))
 
             rhythm[start_idx:end_idx] += (kick * rhythm_volume)[: end_idx - start_idx]
         elif char.lower() == "s":
             snare = make_snare(
-                samplerate,
-                duration=0.2,
-                attack_time=0.005,
-                release_time=0.1
+                samplerate, duration=0.2, attack_time=0.005, release_time=0.1
             )
             end_idx = min(start_idx + len(snare), len(rhythm))
             rhythm[start_idx:end_idx] += (snare * rhythm_volume)[: end_idx - start_idx]
@@ -284,9 +283,7 @@ def test():
         computed_key_offset = note_to_key_offset(note_num)
         assert (
             computed_key_offset == expected_key_offset
-        ), (
-            f"{note_num} {expected_key_offset} {computed_key_offset}"
-        )
+        ), f"{note_num} {expected_key_offset} {computed_key_offset}"
 
     chord_tests: List[Tuple[int, int]] = [
         (-3, -7),
@@ -303,9 +300,7 @@ def test():
         computed_note_offset = chord_to_note_offset(chord_pos)
         assert (
             computed_note_offset == expected_note_offset
-        ), (
-            f"{chord_pos} {expected_note_offset} {computed_note_offset}"
-        )
+        ), f"{chord_pos} {expected_note_offset} {computed_note_offset}"
 
 
 def main():
@@ -367,7 +362,7 @@ def main():
         # Repeat the rhythm pattern
         rhythm = np.tile(rhythm, num_repeats)
     # Trim the rhythm array to match the sound length exactly
-    rhythm = rhythm[:len(sound)]
+    rhythm = rhythm[: len(sound)]
 
     # Mix rhythm with existing sound
     combined_sound = sound + rhythm
