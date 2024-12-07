@@ -97,6 +97,7 @@ def modify_pitch_with_world(
         f0_ceil=800.0,
         frame_period=frame_period,
     )
+    audio = audio.astype(np.float64)
     sp = pw.cheaptrick(audio, _f0, time_axis, sample_rate)
     ap = pw.d4c(audio, _f0, time_axis, sample_rate)
 
