@@ -28,6 +28,7 @@ class InterpolationConfig:
     """Command line inputs."""
 
     instructions: List[Instruction]
+    sample_dir: str
     save: Optional[str] = None
 
 
@@ -92,17 +93,27 @@ def parse_instruction_file(file_path: str) -> List[Instruction]:
     return instructions
 
 
+def get_default_sound_dir() -> str:
+    """Get the default sound directory (<project directory>/demo_sounds/)"""
+    return (Path(__file__).parent / ".." / "demo_sounds").resolve()
+
+
 def parse_arguments() -> InterpolationConfig:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Interpolate between two audio files.")
     parser.add_argument(
         "instruction_file", help="File generation instructions, in JSON format.", type=str
     )
-    parser.add_argument("-s", "--save", help="Path to save the output file", default=None)
+    parser.add_argument("-o", "--out", help="Path to save the output file.", default=None)
+    parser.add_argument(
+        "-s", "--sounds", help="Sound sample directory.", default=get_default_sound_dir()
+    )
+
     args = parser.parse_args()
     config = InterpolationConfig(
         instructions=parse_instruction_file(args.instruction_file),
-        save=args.save,
+        save=args.out,
+        sample_dir=args.sounds,
     )
     return config
 
