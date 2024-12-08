@@ -2,12 +2,13 @@
 
 import argparse
 from dataclasses import dataclass
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict
 from pathlib import Path
 import json
+import os
 import soundfile as sf
 import simpleaudio as sa
-from interpolator.interpolate_signals import interpolate_signals
+from interpolator.interpolate_signals import interpolate_signals, load_audio, AudioData
 
 TVowel = Literal["A", "E", "I", "O", "U"]
 
@@ -29,7 +30,7 @@ class InterpolationConfig:
 
     instructions: List[Instruction]
     sample_dir: str
-    save: Optional[str] = None
+    save_path: Optional[str] = None
 
 
 def parse_instruction_file(file_path: str) -> List[Instruction]:
@@ -77,7 +78,7 @@ def parse_instruction_file(file_path: str) -> List[Instruction]:
             raise ValueError(f"Missing field {e} in instruction at index {idx}.") from e
 
         if vowel not in "AEIOU":
-            raise ValueError(f"Unrecognized vowel: ${vowel}")
+            raise ValueError(f"Unrecognized vowel: {vowel}")
 
         # Validate offset
         if not isinstance(offset, int):
@@ -110,37 +111,53 @@ def parse_arguments() -> InterpolationConfig:
     )
 
     args = parser.parse_args()
+    save_path = Path(args.out) if args.out else None
+    sample_dir = Path(args.sounds)
+    if not os.path.isdir(sample_dir):
+        raise FileNotFoundError(f"Sample directory does not exist: {sample_dir}")
+
     config = InterpolationConfig(
         instructions=parse_instruction_file(args.instruction_file),
-        save=args.out,
-        sample_dir=args.sounds,
+        save_path=save_path,
+        sample_dir=sample_dir,
     )
     return config
+
+
+def get_sample_dict(instructions: List[Instruction], sample_dir) -> Dict[str, AudioData]:
+    """Load a dictionary of sound samples for each unique vowel given in the instructions"""
+    unique_vowels = set(instruction.vowel for instruction in instructions)
+    sample_dict = {}
+    for vowel in unique_vowels:
+        sample_dict[vowel] = load_audio(os.path.join(sample_dir, f"{vowel}.wav"))
+    return sample_dict
+
+
+def generate_from_instructions(instructions: List[Instruction], sample_dir: Path):
+    """Generate an audio file from instructions."""
+    sample_dict = get_sample_dict(instructions, sample_dir)
+    audio_a = sample_dict[instructions[0].vowel]
+    for instruction in instructions[1:]:
+        audio_b = sample_dict[instruction.vowel]
+        audio_a = interpolate_signals(audio_a, audio_b, 0.5, True, True, True, True)
+    return audio_a
 
 
 def main():
     """Connect two sound files by interpolating between their ends."""
     args = parse_arguments()
-    file_a = "demo_sounds/" + args.instructions[0].vowel + ".wav"
-    file_b = "demo_sounds/" + args.instructions[1].vowel + ".wav"
-    # Interpolate signals
-    output_signal, sample_rate = interpolate_signals(
-        file_a,
-        file_b,
-        0.5,
-        magnitude_interpolation=True,
-        phase_interpolation=True,
-        formant_interpolation=True,
-        pitch_interpolation=True,
-    )
+
+    output_audio = generate_from_instructions(args.instructions, args.sample_dir)
 
     # Save or play the result
-    if args.save:
-        sf.write(args.save, output_signal, sample_rate)
-        print(f"Output saved to {args.save}")
+    if args.save_path:
+        sf.write(args.save_path, output_audio.data, output_audio.sample_rate)
+        print(f"Output saved to {args.save_path}")
     else:
         # Play the signal
-        audio = sa.play_buffer((output_signal * 32767).astype("int16"), 1, 2, sample_rate)
+        audio = sa.play_buffer(
+            (output_audio.data * 32767).astype("int16"), 1, 2, output_audio.sample_rate
+        )
         audio.wait_done()
 
 

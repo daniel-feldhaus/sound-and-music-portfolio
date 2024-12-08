@@ -1,4 +1,7 @@
+"""Module for interpolating between audio signals."""
+
 from typing import Tuple
+from dataclasses import dataclass
 import librosa
 import numpy as np
 
@@ -10,7 +13,15 @@ from interpolator.pitch import (
 from .formants import interpolate_formants
 
 
-def load_audio(file_path: str, sample_rate: int = None) -> Tuple[np.ndarray, int]:
+@dataclass
+class AudioData:
+    """Audio data loaded using librosa.load"""
+
+    data: np.ndarray
+    sample_rate: int | float
+
+
+def load_audio(file_path: str, sample_rate: int = None) -> AudioData:
     """
     Load an audio file.
 
@@ -21,13 +32,13 @@ def load_audio(file_path: str, sample_rate: int = None) -> Tuple[np.ndarray, int
     Returns:
         Tuple[np.ndarray, int]: The loaded audio signal and its sample rate.
     """
-    audio, sr = librosa.load(file_path, sr=sample_rate)
-    return audio, sr
+    data, sample_rate = librosa.load(file_path, sr=sample_rate)
+    return AudioData(data, sample_rate)
 
 
 def interpolate_signals(
-    file_a: str,
-    file_b: str,
+    audio_a: AudioData,
+    audio_b: AudioData,
     duration: float,
     magnitude_interpolation: bool = False,
     phase_interpolation: bool = False,
@@ -48,21 +59,17 @@ def interpolate_signals(
     Returns:
         Tuple[np.ndarray, int]: The interpolated audio signal and the sample rate.
     """
-    # Load audio files
-    y_a, sr_a = load_audio(file_a)
-    y_b, sr_b = load_audio(file_b)
-
     # Ensure both files have the same sample rate
-    if sr_a != sr_b:
+    if audio_a.sample_rate != audio_b.sample_rate:
         raise ValueError("Sample rates of input files must match.")
-    sample_rate = sr_a
+    sample_rate = audio_a.sample_rate
 
     # Calculate the number of samples for the overlap duration
     overlap_samples = int(duration * sample_rate)
 
     # Extract segments
-    a_tail = y_a[-overlap_samples:]
-    b_head = y_b[:overlap_samples]
+    a_tail = audio_a.data[-overlap_samples:].copy()
+    b_head = audio_b.data[:overlap_samples].copy()
 
     # Initialize interpolated signal
     interpolated_signal = np.zeros_like(a_tail)
@@ -117,7 +124,7 @@ def interpolate_signals(
 
     # Combine with the original signals
     combined_signal = np.concatenate(
-        (y_a[:-overlap_samples], interpolated_signal, y_b[overlap_samples:])
+        (audio_a.data[:-overlap_samples], interpolated_signal, audio_b.data[overlap_samples:])
     )
 
-    return combined_signal, sample_rate
+    return AudioData(combined_signal, sample_rate)
