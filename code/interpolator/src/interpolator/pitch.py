@@ -2,6 +2,41 @@ import numpy as np
 import librosa
 import pyworld as pw
 
+MIDDLE_C_HZ = 261
+
+
+def shift_pitch(
+    audio: np.ndarray,
+    sample_rate: int,
+    semitones: float = 0.0,
+    frame_period: float = 5.0,
+) -> np.ndarray:
+    """
+    Shift the pitch of an input signal. By default, assume the input is at a constant
+    middle C and shift it by a given number of semitones.
+    """
+    audio = audio.astype(np.float64)
+    f0 = MIDDLE_C_HZ * (2.0 ** (semitones / 12.0))
+
+    _f0, time_axis = pw.harvest(
+        audio,
+        sample_rate,
+        f0_floor=50.0,
+        f0_ceil=800.0,
+        frame_period=frame_period,
+    )
+    sp = pw.cheaptrick(audio, _f0, time_axis, sample_rate)
+    ap = pw.d4c(audio, _f0, time_axis, sample_rate)
+
+    f0_shifted = np.full_like(_f0, f0)
+
+    synthesized_audio = pw.synthesize(f0_shifted, sp, ap, sample_rate, frame_period=frame_period)
+
+    # Truncate to match the original length
+    synthesized_audio = synthesized_audio[: len(audio)]
+
+    return synthesized_audio.astype(np.float32)
+
 
 def extract_pitch_contour(
     audio: np.ndarray,
