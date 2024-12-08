@@ -140,6 +140,22 @@ def get_sample_dict(instructions: List[Instruction], sample_dir) -> Dict[str, Au
     return sample_dict
 
 
+def adjust_audio_duration(audio: AudioData, duration: float) -> AudioData:
+    """Shorten an audio by clipping, or lengthen through interpolated repetition."""
+    start_duration = len(audio.data) / audio.sample_rate
+    target_length = int(audio.sample_rate * duration)
+    # Case 1: Requested duration is shorter than the sample audio.
+    if start_duration > duration:
+        # Case 2: Reqested duration is longer than the sample audio.
+        looped_audio = audio.data.copy()
+        overlap_duration = (len(audio.data) / audio.sample_rate) / 2
+        while len(looped_audio) < target_length:
+            looped_audio = interpolate_signals(looped_audio, looped_audio, overlap_duration)
+        audio = AudioData(looped_audio, audio.sample_rate)
+    clipped_audio = AudioData(audio.data[:target_length], audio.sample_rate)
+    return clipped_audio
+
+
 def generate_from_instructions(instructions: List[Instruction], sample_dir: Path):
     """Generate an audio file from instructions."""
     sample_dict = get_sample_dict(instructions, sample_dir)
