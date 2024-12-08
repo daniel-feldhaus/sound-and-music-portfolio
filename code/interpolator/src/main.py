@@ -20,8 +20,10 @@ class Instruction:
     vowel: TVowel
     # Semitone offset from middle C.
     offset: int
-    # Duration of note.
+    # Duration of note (in ms)
     duration: int
+    # Duration of interpolation between this instruction and the next (in ms)
+    transition_duration: int
 
 
 @dataclass
@@ -74,6 +76,9 @@ def parse_instruction_file(file_path: str) -> List[Instruction]:
             vowel = item["vowel"].upper()
             offset = item["offset"]
             duration = item["duration"]
+            transition_duration = None
+            if idx < len(data) - 1:
+                transition_duration = item["transition_duration"]
         except KeyError as e:
             raise ValueError(f"Missing field {e} in instruction at index {idx}.") from e
 
@@ -88,7 +93,9 @@ def parse_instruction_file(file_path: str) -> List[Instruction]:
         if not isinstance(duration, int) or duration <= 0:
             raise ValueError(f"Duration must be a positive integer in instruction at index {idx}.")
 
-        instruction = Instruction(vowel=vowel, offset=offset, duration=duration)
+        instruction = Instruction(
+            vowel=vowel, offset=offset, duration=duration, transition_duration=transition_duration
+        )
         instructions.append(instruction)
 
     return instructions
@@ -137,9 +144,13 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
     """Generate an audio file from instructions."""
     sample_dict = get_sample_dict(instructions, sample_dir)
     audio_a = sample_dict[instructions[0].vowel]
+    transition_duration = instructions[0].transition_duration
     for instruction in instructions[1:]:
         audio_b = sample_dict[instruction.vowel]
-        audio_a = interpolate_signals(audio_a, audio_b, 0.5, True, True, True, True)
+        audio_a = interpolate_signals(
+            audio_a, audio_b, transition_duration / 1000, True, True, True, True
+        )
+        transition_duration = instruction.transition_duration
     return audio_a
 
 

@@ -2,12 +2,14 @@
     {
         "vowel": "A",
         "offset": 0,
-        "duration": 500
+        "duration": 500,
+        "transition_duration": 500
     },
     {
         "vowel": "E",
         "offset": 2,
-        "duration": 750
+        "duration": 750,
+        "transition_duration": 100
     },
     {
         "vowel": "U",
