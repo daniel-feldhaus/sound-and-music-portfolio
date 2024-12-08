@@ -17,18 +17,17 @@ def shift_pitch(
     Shift the pitch of an input signal. By default, assume the input is at a constant
     middle C and shift it by a given number of semitones.
     """
-    audio = audio.astype(np.float64)
     f0 = MIDDLE_C_HZ * (2.0 ** (semitones / 12.0))
-
+    data = audio.data.astype(np.float64)
     _f0, time_axis = pw.harvest(
-        audio.data,
+        data,
         audio.sample_rate,
         f0_floor=50.0,
         f0_ceil=800.0,
         frame_period=frame_period,
     )
-    sp = pw.cheaptrick(audio, _f0, time_axis, audio.sample_rate)
-    ap = pw.d4c(audio, _f0, time_axis, audio.sample_rate)
+    sp = pw.cheaptrick(data, _f0, time_axis, audio.sample_rate)
+    ap = pw.d4c(data, _f0, time_axis, audio.sample_rate)
 
     f0_shifted = np.full_like(_f0, f0)
 
@@ -37,9 +36,9 @@ def shift_pitch(
     )
 
     # Truncate to match the original length
-    synthesized_audio = synthesized_audio[: len(audio)]
+    synthesized_audio = synthesized_audio[: len(data)].astype(np.float32)
 
-    return synthesized_audio.astype(np.float32)
+    return AudioData(synthesized_audio, audio.sample_rate)
 
 
 def extract_pitch_contour(
