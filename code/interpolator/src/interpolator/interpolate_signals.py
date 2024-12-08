@@ -46,18 +46,19 @@ def interpolate_signals(
     pitch_interpolation: bool = True,
 ) -> Tuple[np.ndarray, int]:
     """
-    Interpolate between the end of file A and the beginning of file B.
+    Interpolate between the end of audio A and the beginning of audio B.
 
     Args:
-        file_a (str): Path to the first audio file.
-        file_b (str): Path to the second audio file.
+        audio_a (AudioData): First audio data
+        audio_b (AudioData): Second audio data
         duration (float): Duration of the overlap in seconds.
         magnitude_interpolation (bool): Whether to perform magnitude interpolation.
         phase_interpolation (bool): Whether to perform phase interpolation.
         formant_interpolation (bool): Whether to perform formant interpolation.
+        pitch_interpolation (bool): Whether to perform pitch interpolation.
 
     Returns:
-        Tuple[np.ndarray, int]: The interpolated audio signal and the sample rate.
+        AudioData: The interpolated audio signal and the sample rate.
     """
     # Ensure both files have the same sample rate
     if audio_a.sample_rate != audio_b.sample_rate:
