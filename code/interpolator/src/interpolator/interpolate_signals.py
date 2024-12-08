@@ -40,10 +40,10 @@ def interpolate_signals(
     audio_a: AudioData,
     audio_b: AudioData,
     duration: float,
-    magnitude_interpolation: bool = False,
-    phase_interpolation: bool = False,
-    formant_interpolation: bool = False,
-    pitch_interpolation: bool = False,
+    magnitude_interpolation: bool = True,
+    phase_interpolation: bool = True,
+    formant_interpolation: bool = True,
+    pitch_interpolation: bool = True,
 ) -> Tuple[np.ndarray, int]:
     """
     Interpolate between the end of file A and the beginning of file B.

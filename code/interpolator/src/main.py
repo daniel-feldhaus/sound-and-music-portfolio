@@ -148,7 +148,7 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
     for instruction in instructions[1:]:
         audio_b = sample_dict[instruction.vowel]
         audio_a = interpolate_signals(
-            audio_a, audio_b, transition_duration / 1000, True, True, True, True
+            audio_a, audio_b, transition_duration=transition_duration / 1000
         )
         transition_duration = instruction.transition_duration
     return audio_a
