@@ -1,13 +1,15 @@
+"""Module for functions related to modifying pitch."""
+
 import numpy as np
 import librosa
 import pyworld as pw
+from interpolator.interpolate_signals import AudioData
 
 MIDDLE_C_HZ = 261
 
 
 def shift_pitch(
-    audio: np.ndarray,
-    sample_rate: int,
+    audio: AudioData,
     semitones: float = 0.0,
     frame_period: float = 5.0,
 ) -> np.ndarray:
@@ -19,18 +21,20 @@ def shift_pitch(
     f0 = MIDDLE_C_HZ * (2.0 ** (semitones / 12.0))
 
     _f0, time_axis = pw.harvest(
-        audio,
-        sample_rate,
+        audio.data,
+        audio.sample_rate,
         f0_floor=50.0,
         f0_ceil=800.0,
         frame_period=frame_period,
     )
-    sp = pw.cheaptrick(audio, _f0, time_axis, sample_rate)
-    ap = pw.d4c(audio, _f0, time_axis, sample_rate)
+    sp = pw.cheaptrick(audio, _f0, time_axis, audio.sample_rate)
+    ap = pw.d4c(audio, _f0, time_axis, audio.sample_rate)
 
     f0_shifted = np.full_like(_f0, f0)
 
-    synthesized_audio = pw.synthesize(f0_shifted, sp, ap, sample_rate, frame_period=frame_period)
+    synthesized_audio = pw.synthesize(
+        f0_shifted, sp, ap, audio.sample_rate, frame_period=frame_period
+    )
 
     # Truncate to match the original length
     synthesized_audio = synthesized_audio[: len(audio)]
