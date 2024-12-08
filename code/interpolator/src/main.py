@@ -6,6 +6,7 @@ from typing import Optional, List, Literal, Dict
 from pathlib import Path
 import json
 import os
+from itertools import pairwise
 import soundfile as sf
 import simpleaudio as sa
 from interpolator.interpolate_signals import interpolate_signals, load_audio, AudioData
@@ -144,28 +145,29 @@ def adjust_audio_duration(audio: AudioData, duration: float) -> AudioData:
     """Shorten an audio by clipping, or lengthen through interpolated repetition."""
     start_duration = len(audio.data) / audio.sample_rate
     target_length = int(audio.sample_rate * duration)
-    # Case 1: Requested duration is shorter than the sample audio.
-    if start_duration > duration:
-        # Case 2: Reqested duration is longer than the sample audio.
-        looped_audio = audio.data.copy()
+    if start_duration < duration:
         overlap_duration = (len(audio.data) / audio.sample_rate) / 2
-        while len(looped_audio) < target_length:
-            looped_audio = interpolate_signals(looped_audio, looped_audio, overlap_duration)
-        audio = AudioData(looped_audio, audio.sample_rate)
+        while len(audio.data) < target_length:
+            audio = interpolate_signals(audio, audio, overlap_duration)
     clipped_audio = AudioData(audio.data[:target_length], audio.sample_rate)
     return clipped_audio
+
+
+def process_audio(audio: AudioData, instruction: Instruction) -> AudioData:
+    """Process an audio clip based on its associated instruction."""
+    return adjust_audio_duration(audio, instruction.duration / 1000)
 
 
 def generate_from_instructions(instructions: List[Instruction], sample_dir: Path):
     """Generate an audio file from instructions."""
     sample_dict = get_sample_dict(instructions, sample_dir)
-    audio_a = sample_dict[instructions[0].vowel]
-    transition_duration = instructions[0].transition_duration
-    for instruction in instructions[1:]:
-        audio_b = sample_dict[instruction.vowel]
-        audio_a = interpolate_signals(audio_a, audio_b, duration=transition_duration / 1000)
-        transition_duration = instruction.transition_duration
-    return audio_a
+    audio = process_audio(sample_dict[instructions[0].vowel], instructions[0])
+    for instruction_a, instruction_b in pairwise(instructions):
+        audio_b = process_audio(sample_dict[instruction_b.vowel], instruction_b)
+        audio = interpolate_signals(
+            audio, audio_b, duration=instruction_a.transition_duration / 1000
+        )
+    return audio
 
 
 def main():
