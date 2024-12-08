@@ -1,0 +1,17 @@
+[
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 500
+    },
+    {
+        "vowel": "E",
+        "offset": 2,
+        "duration": 750
+    },
+    {
+        "vowel": "U",
+        "offset": 2,
+        "duration": 750
+    }
+]
