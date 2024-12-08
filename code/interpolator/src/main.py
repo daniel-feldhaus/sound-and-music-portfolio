@@ -10,6 +10,7 @@ from itertools import pairwise
 import soundfile as sf
 import simpleaudio as sa
 from interpolator.interpolate_signals import interpolate_signals, load_audio, AudioData
+from interpolator.pitch import shift_pitch
 
 TVowel = Literal["A", "E", "I", "O", "U"]
 
@@ -155,7 +156,9 @@ def adjust_audio_duration(audio: AudioData, duration: float) -> AudioData:
 
 def process_audio(audio: AudioData, instruction: Instruction) -> AudioData:
     """Process an audio clip based on its associated instruction."""
-    return adjust_audio_duration(audio, instruction.duration / 1000)
+    audio = adjust_audio_duration(audio, instruction.duration / 1000)
+    audio = shift_pitch(audio, instruction.offset)
+    return audio
 
 
 def generate_from_instructions(instructions: List[Instruction], sample_dir: Path):

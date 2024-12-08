@@ -3,7 +3,7 @@
 import numpy as np
 import librosa
 import pyworld as pw
-from interpolator.interpolate_signals import AudioData
+from interpolator.audio_data import AudioData
 
 MIDDLE_C_HZ = 261
 

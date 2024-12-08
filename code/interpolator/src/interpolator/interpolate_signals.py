@@ -1,9 +1,9 @@
 """Module for interpolating between audio signals."""
 
 from typing import Tuple
-from dataclasses import dataclass
 import librosa
 import numpy as np
+from interpolator.audio_data import AudioData
 
 from interpolator.pitch import (
     extract_pitch_contour,
@@ -11,14 +11,6 @@ from interpolator.pitch import (
     modify_pitch_with_world,
 )
 from .formants import interpolate_formants
-
-
-@dataclass
-class AudioData:
-    """Audio data loaded using librosa.load"""
-
-    data: np.ndarray
-    sample_rate: int | float
 
 
 def load_audio(file_path: str, sample_rate: int = None) -> AudioData:
