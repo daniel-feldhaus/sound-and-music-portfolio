@@ -12,7 +12,7 @@ def shift_pitch(
     audio: AudioData,
     semitones: float = 0.0,
     frame_period: float = 5.0,
-) -> np.ndarray:
+) -> AudioData:
     """
     Shift the pitch of an input signal. By default, assume the input is at a constant
     middle C and shift it by a given number of semitones.
@@ -34,6 +34,11 @@ def shift_pitch(
     synthesized_audio = pw.synthesize(
         f0_shifted, sp, ap, audio.sample_rate, frame_period=frame_period
     )
+
+    # Normalize the synthesized audio to prevent clipping
+    max_val = np.max(np.abs(synthesized_audio))
+    if max_val > 1.0:
+        synthesized_audio = synthesized_audio / max_val
 
     # Truncate to match the original length
     synthesized_audio = synthesized_audio[: len(data)].astype(np.float32)
@@ -63,7 +68,7 @@ def extract_pitch_contour(
     Returns:
         np.ndarray: Pitch contour (fundamental frequency over time).
     """
-    f0, voiced_flag, _ = librosa.pyin(
+    f0, _voiced_flag, _ = librosa.pyin(
         audio,
         sr=sample_rate,
         fmin=fmin,
@@ -71,10 +76,6 @@ def extract_pitch_contour(
         frame_length=frame_length,
         hop_length=hop_length,
     )
-
-    # Replace unvoiced frames with NaN
-    f0 = np.where(voiced_flag, f0, np.nan)
-
     return f0
 
 
@@ -94,19 +95,11 @@ def interpolate_pitch_contours(f0_a: np.ndarray, f0_b: np.ndarray) -> np.ndarray
     f0_a = f0_a[:min_length]
     f0_b = f0_b[:min_length]
 
-    # Interpolation factor
+    # Create an alpha factor for interpolation
     alpha = np.linspace(0, 1, min_length)
 
-    # Handle NaNs by replacing them with zeros
-    f0_a_fixed = np.where(np.isnan(f0_a), 0, f0_a)
-    f0_b_fixed = np.where(np.isnan(f0_b), 0, f0_b)
-
-    # Interpolate pitch contours
-    f0_interpolated = (1 - alpha) * f0_a_fixed + alpha * f0_b_fixed
-
-    # Restore NaNs in unvoiced frames
-    unvoiced_mask = np.isnan(f0_a) & np.isnan(f0_b)
-    f0_interpolated[unvoiced_mask] = np.nan
+    # Initialize interpolated pitch contour
+    f0_interpolated = (1 - alpha) * f0_a + alpha * f0_b
 
     return f0_interpolated
 
