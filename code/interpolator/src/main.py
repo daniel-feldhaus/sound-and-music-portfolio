@@ -1,13 +1,29 @@
 """Create an interpolated output file based on a collection of input instructions."""
 
 import argparse
+from dataclasses import dataclass
+from typing import Optional
 import soundfile as sf
 import simpleaudio as sa
 from interpolator.interpolate_signals import interpolate_signals
 
 
-def main():
-    """Connect two sound files by interpolating between their ends."""
+@dataclass
+class InterpolationConfig:
+    """Command line inputs."""
+
+    file_a: str
+    file_b: str
+    save: Optional[str] = None
+    duration: float = 1.0
+    magnitude: bool = False
+    phase: bool = False
+    formant: bool = False
+    pitch_interpolation: bool = True
+
+
+def parse_arguments() -> InterpolationConfig:
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Interpolate between two audio files.")
     parser.add_argument("file_a", help="Path to the first audio file")
     parser.add_argument("file_b", help="Path to the second audio file")
@@ -21,7 +37,21 @@ def main():
     parser.add_argument("-p", "--phase", action="store_true", help="Enable phase interpolation")
     parser.add_argument("-f", "--formant", action="store_true", help="Enable formant interpolation")
     args = parser.parse_args()
+    config = InterpolationConfig(
+        file_a=args.file_a,
+        file_b=args.file_b,
+        save=args.save,
+        duration=args.duration,
+        magnitude=args.magnitude,
+        phase=args.phase,
+        formant=args.formant,
+    )
+    return config
 
+
+def main():
+    """Connect two sound files by interpolating between their ends."""
+    args = parse_arguments()
     # Interpolate signals
     output_signal, sample_rate = interpolate_signals(
         args.file_a,
