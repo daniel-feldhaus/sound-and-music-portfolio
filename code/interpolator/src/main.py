@@ -1,3 +1,5 @@
+"""Create an interpolated output file based on a collection of input instructions."""
+
 import argparse
 import soundfile as sf
 import simpleaudio as sa
