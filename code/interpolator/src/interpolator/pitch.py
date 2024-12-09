@@ -14,7 +14,9 @@ def shift_pitch(audio: AudioData, semitones: float) -> AudioData:
 
     Args:
         audio (AudioData): The input audio signal and its sample rate.
-        semitones (float): The number of semitones to shift (positive for upward, negative for downward).
+        semitones (float):
+            The number of semitones to shift (positive for upward,
+            negative for downward).
 
     Returns:
         AudioData: The pitch-shifted audio signal.
@@ -36,7 +38,8 @@ def modify_pitch_with_world(
     frame_period: float,
 ) -> np.ndarray:
     """
-    Modify the pitch of a sustained audio signal using the WORLD vocoder with interpolated scaling factors.
+    Modify the pitch of a sustained audio signal using the WORLD vocoder
+    with interpolated scaling factors.
 
     Args:
         audio (np.ndarray): Audio signal to modify.
@@ -85,5 +88,5 @@ def modify_pitch_with_world(
     # Step 3: Synthesis
     print("Synthesizing audio with modified pitch...")
     synthesized_audio = pw.synthesize(f0_modified, sp, ap, sample_rate, frame_period=frame_period)
-
+    synthesized_audio = np.nan_to_num(synthesized_audio)
     return synthesized_audio.astype(np.float32)
