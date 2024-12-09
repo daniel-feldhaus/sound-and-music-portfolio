@@ -4,7 +4,6 @@ from typing import Tuple
 import librosa
 import numpy as np
 from interpolator.audio_data import AudioData
-
 from interpolator.pitch import (
     modify_pitch_with_world,
 )
@@ -41,6 +40,7 @@ def interpolate_signals(
     phase_interpolation: bool = True,
     formant_interpolation: bool = True,
     pitch_interpolation: bool = True,
+    crossfade_duration: float = 0.05,
 ) -> Tuple[np.ndarray, int]:
     """
     Interpolate between the end of audio A and the beginning of audio B.
@@ -64,7 +64,7 @@ def interpolate_signals(
 
     # Calculate the number of samples for the overlap duration
     overlap_samples = int(duration * sample_rate)
-
+    crossfade_samples = int(crossfade_duration * sample_rate)
     # Extract segments
     a_tail = audio_a.data[-overlap_samples:].copy()
     b_head = audio_b.data[:overlap_samples].copy()
@@ -76,12 +76,12 @@ def interpolate_signals(
         freq_a = offset_to_frequency(instruction_a.offset)
         freq_b = offset_to_frequency(instruction_b.offset)
 
-        hop_length = int(0.0125 * sample_rate)  # 12.5 ms
+        hop_length = int(0.0005 * sample_rate)  # 0.5 ms
         frame_period = (hop_length / sample_rate) * 1000  # in milliseconds
-        print(f"Interpolating frequency between {freq_a:.0f}Hz and {freq_b:.0f}Hz")
-
+        # print(f"Interpolating frequency between {freq_a:.0f}Hz and {freq_b:.0f}Hz")
+        # plot_waveform(a_tail, sample_rate, "A tail before.")
         a_tail = modify_pitch_with_world(
-            a_tail,
+            audio_a.data[-overlap_samples - 200 :].copy(),
             sample_rate,
             source_freq=freq_a,
             target_start_freq=freq_a,
@@ -96,6 +96,7 @@ def interpolate_signals(
             target_end_freq=freq_b,
             frame_period=frame_period,
         )
+        # plot_waveform(a_tail, sample_rate, "A tail after.")
     # Perform spectral interpolation (magnitude and phase)
     if magnitude_interpolation or phase_interpolation:
         stft_a = librosa.stft(a_tail)
@@ -130,13 +131,31 @@ def interpolate_signals(
     if formant_interpolation:
         interpolated_signal = interpolate_formants(a_tail, b_head, interpolated_signal, sample_rate)
 
-    # Combine with the original signals
+    # Apply crossfades between segments
+    pre_interpolated = audio_a.data[:-overlap_samples]
+    post_interpolated = audio_b.data[overlap_samples:]
+
+    # Apply crossfade between pre_interpolated and interpolated_signal
+    pre_crossfade = pre_interpolated[-crossfade_samples:]
+    interpolated_start = interpolated_signal[:crossfade_samples]
+    crossfade_in = np.linspace(0, 1, crossfade_samples)
+    pre_crossfaded = (1 - crossfade_in) * pre_crossfade + crossfade_in * interpolated_start
+
+    # Apply crossfade between interpolated_signal and post_interpolated
+    interpolated_end = interpolated_signal[-crossfade_samples:]
+    post_crossfade = post_interpolated[:crossfade_samples]
+    crossfade_out = np.linspace(1, 0, crossfade_samples)
+    post_crossfaded = (1 - crossfade_out) * interpolated_end + crossfade_out * post_crossfade
+    # Combine all segments with crossfades
     combined_signal = np.concatenate(
-        (
-            audio_a.data[:-overlap_samples],
-            interpolated_signal,
-            audio_b.data[overlap_samples:],
-        )
+        [
+            pre_interpolated[:-crossfade_samples],  # Pre-crossfade segment
+            pre_crossfaded,  # Pre-to-interpolated crossfade
+            interpolated_signal[crossfade_samples:-crossfade_samples],  # Main interpolated region
+            post_crossfaded,  # Interpolated-to-post crossfade
+            post_interpolated[crossfade_samples:],  # Post-crossfade segment
+        ]
     )
 
+    # filtered_combined_signal = remove_quiet_chunks(combined_signal, 0.01, 0.03 * sample_rate)
     return AudioData(combined_signal, sample_rate)
