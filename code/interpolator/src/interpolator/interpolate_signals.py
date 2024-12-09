@@ -6,8 +6,6 @@ import numpy as np
 from interpolator.audio_data import AudioData
 
 from interpolator.pitch import (
-    extract_pitch_contour,
-    interpolate_pitch_contours,
     modify_pitch_with_world,
 )
 from .formants import interpolate_formants
@@ -28,10 +26,17 @@ def load_audio(file_path: str, sample_rate: int = None) -> AudioData:
     return AudioData(data, sample_rate)
 
 
+def offset_to_frequency(semitones: float, origin: float = 261) -> float:
+    """Calculate the frequency from a semitone offset"""
+    return origin * (2 ** (semitones / 12.0))
+
+
 def interpolate_signals(
     audio_a: AudioData,
     audio_b: AudioData,
     duration: float,
+    instruction_a=None,
+    instruction_b=None,
     magnitude_interpolation: bool = True,
     phase_interpolation: bool = True,
     formant_interpolation: bool = True,
@@ -67,6 +72,17 @@ def interpolate_signals(
     # Initialize interpolated signal
     interpolated_signal = np.zeros_like(a_tail)
 
+    if pitch_interpolation and instruction_a.offset != instruction_b.offset:
+        freq_a = offset_to_frequency(instruction_a.offset)
+        freq_b = offset_to_frequency(instruction_b.offset)
+
+        hop_length = int(0.0125 * sample_rate)  # 12.5 ms
+        frame_period = (hop_length / sample_rate) * 1000  # in milliseconds
+
+        a_tail = modify_pitch_with_world(a_tail, sample_rate, freq_a, freq_b, frame_period)
+        b_head = modify_pitch_with_world(b_head, sample_rate, freq_a, freq_b, frame_period)
+        print(f"Interpolating frequency between {freq_a:.0f}Hz and {freq_b:.0f}Hz")
+
     # Perform spectral interpolation (magnitude and phase)
     if magnitude_interpolation or phase_interpolation:
         stft_a = librosa.stft(a_tail)
@@ -96,28 +112,13 @@ def interpolate_signals(
     if formant_interpolation:
         interpolated_signal = interpolate_formants(a_tail, b_head, interpolated_signal, sample_rate)
 
-    if pitch_interpolation:
-        print("Performing pitch interpolation...")
-        # Frame parameters
-        frame_length = int(0.025 * sample_rate)  # 25 ms
-        hop_length = int(0.0125 * sample_rate)  # 12.5 ms
-        frame_period = (hop_length / sample_rate) * 1000  # in milliseconds
-
-        # Extract pitch contours
-        f0_a = extract_pitch_contour(a_tail, sample_rate, frame_length, hop_length)
-        f0_b = extract_pitch_contour(b_head, sample_rate, frame_length, hop_length)
-
-        # Interpolate pitch contours
-        f0_interpolated = interpolate_pitch_contours(f0_a, f0_b)
-
-        # Modify pitch of the overlapping segment
-        interpolated_signal = modify_pitch_with_world(
-            interpolated_signal, sample_rate, f0_interpolated, frame_period
-        )
-
     # Combine with the original signals
     combined_signal = np.concatenate(
-        (audio_a.data[:-overlap_samples], interpolated_signal, audio_b.data[overlap_samples:])
+        (
+            audio_a.data[: -overlap_samples + 1000],
+            interpolated_signal[1000:-1000],
+            audio_b.data[overlap_samples - 1000 :],
+        )
     )
 
     return AudioData(combined_signal, sample_rate)

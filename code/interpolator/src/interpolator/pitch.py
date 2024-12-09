@@ -86,15 +86,16 @@ def interpolate_pitch_contours(f0_a: np.ndarray, f0_b: np.ndarray) -> np.ndarray
 
 
 def modify_pitch_with_world(
-    audio: np.ndarray, sample_rate: int, f0_interpolated: np.ndarray, frame_period: float
+    audio: np.ndarray, sample_rate: int, start_freq: float, end_freq: float, frame_period: float
 ) -> np.ndarray:
     """
-    Modify the pitch of an audio signal using the WORLD vocoder.
+    Modify the pitch of an audio signal using the WORLD vocoder with linearly interpolated frequencies.
 
     Args:
         audio (np.ndarray): Audio signal to modify.
         sample_rate (int): Sampling rate of the audio signal.
-        f0_interpolated (np.ndarray): Interpolated pitch contour.
+        start_freq (float): Starting frequency for pitch modification.
+        end_freq (float): Ending frequency for pitch modification.
         frame_period (float): Frame period in milliseconds.
 
     Returns:
@@ -113,7 +114,11 @@ def modify_pitch_with_world(
     sp = pw.cheaptrick(audio, _f0, time_axis, sample_rate)
     ap = pw.d4c(audio, _f0, time_axis, sample_rate)
 
-    # Ensure f0_interpolated matches the length of _f0
+    # Linearly interpolate frequencies
+    num_frames = len(_f0)
+    f0_interpolated = np.linspace(start_freq, end_freq, num=num_frames)
+
+    # Ensure lengths match
     min_length = min(len(_f0), len(f0_interpolated))
     _f0 = _f0[:min_length]
     sp = sp[:min_length]

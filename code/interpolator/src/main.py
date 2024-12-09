@@ -168,7 +168,11 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
     for instruction_a, instruction_b in pairwise(instructions):
         audio_b = process_audio(sample_dict[instruction_b.vowel], instruction_b)
         audio = interpolate_signals(
-            audio, audio_b, duration=instruction_a.transition_duration / 1000
+            audio,
+            audio_b,
+            duration=instruction_a.transition_duration / 1000,
+            instruction_a=instruction_a,
+            instruction_b=instruction_b,
         )
     return audio
 
