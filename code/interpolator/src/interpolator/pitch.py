@@ -8,42 +8,23 @@ from interpolator.audio_data import AudioData
 MIDDLE_C_HZ = 261
 
 
-def shift_pitch(
-    audio: AudioData,
-    semitones: float = 0.0,
-    frame_period: float = 5.0,
-) -> AudioData:
+def shift_pitch(audio: AudioData, semitones: float) -> AudioData:
     """
-    Shift the pitch of an input signal. By default, assume the input is at a constant
-    middle C and shift it by a given number of semitones.
+    Shift the pitch of an input signal uniformly by a given number of semitones using librosa.
+
+    Args:
+        audio (AudioData): The input audio signal and its sample rate.
+        semitones (float): The number of semitones to shift (positive for upward, negative for downward).
+
+    Returns:
+        AudioData: The pitch-shifted audio signal.
     """
-    f0 = MIDDLE_C_HZ * (2.0 ** (semitones / 12.0))
-    data = audio.data.astype(np.float64)
-    _f0, time_axis = pw.harvest(
-        data,
-        audio.sample_rate,
-        f0_floor=50.0,
-        f0_ceil=800.0,
-        frame_period=frame_period,
-    )
-    sp = pw.cheaptrick(data, _f0, time_axis, audio.sample_rate)
-    ap = pw.d4c(data, _f0, time_axis, audio.sample_rate)
-
-    f0_shifted = np.full_like(_f0, f0)
-
-    synthesized_audio = pw.synthesize(
-        f0_shifted, sp, ap, audio.sample_rate, frame_period=frame_period
+    # Use librosa to shift pitch
+    shifted_signal = librosa.effects.pitch_shift(
+        audio.data, sr=audio.sample_rate, n_steps=semitones
     )
 
-    # Normalize the synthesized audio to prevent clipping
-    max_val = np.max(np.abs(synthesized_audio))
-    if max_val > 1.0:
-        synthesized_audio = synthesized_audio / max_val
-
-    # Truncate to match the original length
-    synthesized_audio = synthesized_audio[: len(data)].astype(np.float32)
-
-    return AudioData(synthesized_audio, audio.sample_rate)
+    return AudioData(shifted_signal, audio.sample_rate)
 
 
 def extract_pitch_contour(
