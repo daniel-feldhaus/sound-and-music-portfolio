@@ -2,18 +2,128 @@
     {
         "vowel": "A",
         "offset": 0,
-        "duration": 2000,
-        "transition_duration": 500
+        "duration": 500,
+        "transition_duration": 250
     },
     {
         "vowel": "E",
+        "offset": 0,
+        "duration": 400,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "E",
+        "offset": 0,
+        "duration": 400,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "E",
+        "offset": 0,
+        "duration": 400,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "E",
+        "offset": 1,
+        "duration": 400,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "I",
         "offset": 2,
-        "duration": 750,
-        "transition_duration": 100
+        "duration": 500,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "I",
+        "offset": 2,
+        "duration": 500,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "I",
+        "offset": 2,
+        "duration": 500,
+        "transition_duration": 250
     },
     {
         "vowel": "U",
-        "offset": 2,
-        "duration": 750
+        "offset": 7,
+        "duration": 750,
+        "transition_duration": 0
+    },
+    {
+        "vowel": "U",
+        "offset": -5,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "O",
+        "offset": -5,
+        "duration": 600,
+        "transition_duration": 200
+    },
+    {
+        "vowel": "A",
+        "offset": -3,
+        "duration": 600,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "O",
+        "offset": -3,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "U",
+        "offset": -5,
+        "duration": 600,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "O",
+        "offset": -5,
+        "duration": 800,
+        "transition_duration": 200
+    },
+    {
+        "vowel": "A",
+        "offset": -3,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "O",
+        "offset": -3,
+        "duration": 900,
+        "transition_duration": 500
+    },
+    {
+        "vowel": "U",
+        "offset": -10,
+        "duration": 2000,
+        "transition_duration": 250
     }
+
 ]
