@@ -9,6 +9,7 @@ import os
 from itertools import pairwise
 import soundfile as sf
 import simpleaudio as sa
+import numpy as np
 from interpolator.interpolate_signals import interpolate_signals, load_audio, AudioData
 from interpolator.pitch import shift_pitch
 
@@ -25,7 +26,7 @@ class Instruction:
     # Duration of note (in ms)
     duration: int
     # Duration of interpolation between this instruction and the next (in ms)
-    transition_duration: int
+    transition_duration: Optional[int]
 
 
 @dataclass
@@ -78,9 +79,7 @@ def parse_instruction_file(file_path: str) -> List[Instruction]:
             vowel = item["vowel"].upper()
             offset = item["offset"]
             duration = item["duration"]
-            transition_duration = None
-            if idx < len(data) - 1:
-                transition_duration = item["transition_duration"]
+            transition_duration = item.get("transition_duration", None)
         except KeyError as e:
             raise ValueError(f"Missing field {e} in instruction at index {idx}.") from e
 
@@ -167,15 +166,18 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
     audio = process_audio(sample_dict[instructions[0].vowel], instructions[0])
     for instruction_a, instruction_b in pairwise(instructions):
         audio_b = process_audio(sample_dict[instruction_b.vowel], instruction_b)
-        audio = interpolate_signals(
-            audio,
-            audio_b,
-            duration=instruction_a.transition_duration / 1000,
-            instruction_a=instruction_a,
-            instruction_b=instruction_b,
-            pitch_interpolation=True,
-            formant_interpolation=False,
-        )
+        if instruction_a.transition_duration:
+            audio = interpolate_signals(
+                audio,
+                audio_b,
+                duration=instruction_a.transition_duration / 1000,
+                instruction_a=instruction_a,
+                instruction_b=instruction_b,
+                pitch_interpolation=True,
+                formant_interpolation=False,
+            )
+        else:
+            audio = AudioData(np.concatenate([audio.data, audio_b.data]), audio.sample_rate)
     return audio
 
 
