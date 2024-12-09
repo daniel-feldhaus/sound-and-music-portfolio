@@ -78,11 +78,24 @@ def interpolate_signals(
 
         hop_length = int(0.0125 * sample_rate)  # 12.5 ms
         frame_period = (hop_length / sample_rate) * 1000  # in milliseconds
-
-        a_tail = modify_pitch_with_world(a_tail, sample_rate, freq_a, freq_b, frame_period)
-        b_head = modify_pitch_with_world(b_head, sample_rate, freq_a, freq_b, frame_period)
         print(f"Interpolating frequency between {freq_a:.0f}Hz and {freq_b:.0f}Hz")
 
+        a_tail = modify_pitch_with_world(
+            a_tail,
+            sample_rate,
+            source_freq=freq_a,
+            target_start_freq=freq_a,
+            target_end_freq=freq_b,
+            frame_period=frame_period,
+        )
+        b_head = modify_pitch_with_world(
+            b_head,
+            sample_rate,
+            source_freq=freq_b,
+            target_start_freq=freq_a,
+            target_end_freq=freq_b,
+            frame_period=frame_period,
+        )
     # Perform spectral interpolation (magnitude and phase)
     if magnitude_interpolation or phase_interpolation:
         stft_a = librosa.stft(a_tail)
@@ -115,9 +128,9 @@ def interpolate_signals(
     # Combine with the original signals
     combined_signal = np.concatenate(
         (
-            audio_a.data[: -overlap_samples + 1000],
-            interpolated_signal[1000:-1000],
-            audio_b.data[overlap_samples - 1000 :],
+            audio_a.data[:-overlap_samples],
+            interpolated_signal,
+            audio_b.data[overlap_samples:],
         )
     )
 

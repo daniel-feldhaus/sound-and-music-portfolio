@@ -173,6 +173,8 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
             duration=instruction_a.transition_duration / 1000,
             instruction_a=instruction_a,
             instruction_b=instruction_b,
+            pitch_interpolation=True,
+            formant_interpolation=False,
         )
     return audio
 

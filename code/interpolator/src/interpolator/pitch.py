@@ -27,75 +27,23 @@ def shift_pitch(audio: AudioData, semitones: float) -> AudioData:
     return AudioData(shifted_signal, audio.sample_rate)
 
 
-def extract_pitch_contour(
+def modify_pitch_with_world(
     audio: np.ndarray,
     sample_rate: int,
-    frame_length: int,
-    hop_length: int,
-    fmin: float = 50.0,
-    fmax: float = 800.0,
+    source_freq: float,
+    target_start_freq: float,
+    target_end_freq: float,
+    frame_period: float,
 ) -> np.ndarray:
     """
-    Extract the pitch contour from an audio signal using librosa's pyin method.
-
-    Args:
-        audio (np.ndarray): Audio signal.
-        sample_rate (int): Sampling rate of the audio signal.
-        frame_length (int): Length of each frame in samples.
-        hop_length (int): Number of samples between frames.
-        fmin (float): Minimum frequency to consider (Hz).
-        fmax (float): Maximum frequency to consider (Hz).
-
-    Returns:
-        np.ndarray: Pitch contour (fundamental frequency over time).
-    """
-    f0, _voiced_flag, _ = librosa.pyin(
-        audio,
-        sr=sample_rate,
-        fmin=fmin,
-        fmax=fmax,
-        frame_length=frame_length,
-        hop_length=hop_length,
-    )
-    return f0
-
-
-def interpolate_pitch_contours(f0_a: np.ndarray, f0_b: np.ndarray) -> np.ndarray:
-    """
-    Interpolate between two pitch contours to create a smooth transition.
-
-    Args:
-        f0_a (np.ndarray): Pitch contour of the first audio segment.
-        f0_b (np.ndarray): Pitch contour of the second audio segment.
-
-    Returns:
-        np.ndarray: Interpolated pitch contour.
-    """
-    # Ensure both pitch contours are the same length
-    min_length = min(len(f0_a), len(f0_b))
-    f0_a = f0_a[:min_length]
-    f0_b = f0_b[:min_length]
-
-    # Create an alpha factor for interpolation
-    alpha = np.linspace(0, 1, min_length)
-
-    # Initialize interpolated pitch contour
-    f0_interpolated = (1 - alpha) * f0_a + alpha * f0_b
-
-    return f0_interpolated
-
-
-def modify_pitch_with_world(
-    audio: np.ndarray, sample_rate: int, start_freq: float, end_freq: float, frame_period: float
-) -> np.ndarray:
-    """
-    Modify the pitch of an audio signal using the WORLD vocoder with linearly interpolated frequencies.
+    Modify the pitch of a sustained audio signal using the WORLD vocoder with interpolated scaling factors.
 
     Args:
         audio (np.ndarray): Audio signal to modify.
         sample_rate (int): Sampling rate of the audio signal.
-        start_freq (float): Starting frequency for pitch modification.
-        end_freq (float): Ending frequency for pitch modification.
+        source_freq (float): Original frequency of the input audio (freq_a or freq_b).
+        target_start_freq (float): Starting frequency for pitch modification.
+        target_end_freq (float): Ending frequency for pitch modification.
         frame_period (float): Frame period in milliseconds.
 
     Returns:
@@ -106,27 +54,33 @@ def modify_pitch_with_world(
     _f0, time_axis = pw.harvest(
         audio.astype(np.float64),
         sample_rate,
-        f0_floor=50.0,
-        f0_ceil=800.0,
+        f0_floor=50,
+        f0_ceil=800,
         frame_period=frame_period,
     )
-    audio = audio.astype(np.float64)
-    sp = pw.cheaptrick(audio, _f0, time_axis, sample_rate)
-    ap = pw.d4c(audio, _f0, time_axis, sample_rate)
+    sp = pw.cheaptrick(audio.astype(np.float64), _f0, time_axis, sample_rate)
+    ap = pw.d4c(audio.astype(np.float64), _f0, time_axis, sample_rate)
 
-    # Linearly interpolate frequencies
+    # Step 2: Compute Scaling Factors
     num_frames = len(_f0)
-    f0_interpolated = np.linspace(start_freq, end_freq, num=num_frames)
 
-    # Ensure lengths match
-    min_length = min(len(_f0), len(f0_interpolated))
-    _f0 = _f0[:min_length]
-    sp = sp[:min_length]
-    ap = ap[:min_length]
-    f0_interpolated = f0_interpolated[:min_length]
+    # Handle cases where source_freq is zero or invalid
+    if source_freq <= 0:
+        raise ValueError("source_freq must be a positive number.")
 
-    # Handle NaNs in f0_interpolated
-    f0_modified = np.where(np.isnan(f0_interpolated), 0.0, f0_interpolated)
+    # Compute scaling factors from start to end
+    scaling_factors = np.linspace(
+        target_start_freq / source_freq, target_end_freq / source_freq, num=num_frames
+    )
+
+    # Apply scaling factors to the original f0
+    f0_modified = _f0 * scaling_factors
+
+    # Ensure that f0_modified does not exceed WORLD's f0 floor and ceil
+    f0_modified = np.clip(f0_modified, 50, 800)
+
+    # Replace NaNs and infinities with zeros (unvoiced)
+    f0_modified = np.where(np.isfinite(f0_modified), f0_modified, 0.0)
 
     # Step 3: Synthesis
     print("Synthesizing audio with modified pitch...")
