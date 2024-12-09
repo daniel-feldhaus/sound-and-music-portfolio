@@ -120,6 +120,11 @@ def interpolate_signals(
         # Combine magnitude and phase
         stft_interpolated = interpolated_mag * np.exp(1j * interpolated_phase)
         interpolated_signal = librosa.istft(stft_interpolated)
+    else:
+        # If no phase or mag interpolation, just do a hard cutoff.
+        interpolated_signal = np.concatenate(
+            [a_tail[: overlap_samples // 2], b_head[overlap_samples // 2 :]]
+        )
 
     # Perform formant interpolation
     if formant_interpolation:
