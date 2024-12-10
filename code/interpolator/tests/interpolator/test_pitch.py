@@ -17,8 +17,8 @@ def test_shift_pitch():
     test_audio = AudioData(test_tone, sr)
     # Shift up by 12 semitones (one octave)
     shifted_audio = shift_pitch(test_audio, semitones=12.0)
-    assert shifted_audio.shape == test_tone.shape
+    assert shifted_audio.data.shape == test_tone.shape
 
     # Shift down by 12 semitones
     shifted_audio = shift_pitch(test_audio, semitones=-12.0)
-    assert shifted_audio.shape == test_tone.shape
+    assert shifted_audio.data.shape == test_tone.shape
