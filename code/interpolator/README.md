@@ -47,3 +47,41 @@ python src/main.py instructions.json -o output.wav
 
 Interpolator applies four different interpolations, which each use very different methods.
 
+### Magnitue and Phase
+
+The magnitude and phase interpolations are closely related, as they both modify different aspects of the Short-Time Fourier Transform (STFT).
+
+These two were the first and simplest of the four methods to implement. On their own, they create a sort of nicer-sounding crossfade, where the two samples are easy for the ear to differentiate between throughout the transition.
+
+#### Step 1: STFT Calculation
+
+Sound A and Sound B are represented in the frequency domain using the STFT.
+
+#### Step 2: Magnitude / Phase Separation
+Each STFT is separated into its magnitude (absolute value) and phase (angle)
+
+#### Step 3: Magnitude Interpolation
+
+The magnitude interpolation was the most straightforward to implement of the four methods.
+
+Magnitude interpolation focuses on the or volume of different frequency components in a sound. Each sound is represented in the frequency domain using the Short-Time Fourier Transform (STFT). To interpolate magnitudes between two sounds, the algorithm calculates a weighted average of their magnitude spectra, which creates a smooth transition in energy distribution between the two sounds.
+
+#### Step 4: Phase Interpolation
+
+Phase interpolation deals with the alignment of sound waves in the frequency domain. The phase spectrum of the STFT represents the timing offset of each frequency component relative to the beginning of the signal. Smoothly interpolating the phase spectra of two sounds helps to align their waveforms in time, reducing potential artifacts during the transition.
+
+Like the magnitude interpolation, phase interpolation is performed using a weighted average.
+
+This method doesn't effect the sound much on its own, but when used in concert with the magnitude interpolation, it helps to remove artifacts and generally smooth out the transition.
+
+#### Step 6: Re-Combination
+
+The magnitude and phase are re-combined, using the STFT equation.
+$$
+STFT_{interp}(f, t) = M_{interp}(f, t) \cdot e^{i \Phi_{interp}(f, t)}
+$$
+
+#### Step 7: Conversion back to audio
+
+The resulting combination is converted back to audio with the ISTFT.
+
