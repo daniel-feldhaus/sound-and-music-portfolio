@@ -186,3 +186,6 @@ I could easily add support for filenames other than the five vowels. I didn't te
 The four methods combined generate a lot of artifacts, with the main culprits being the phase and formant methods.
 
 I believe I could resolve some of these issues by modifying the formants of the two sounds separately before being merged via magnitude / phase.
+
+### Stability
+Some instructions don't work, for reasons I still don't fully understand. In general, there need to be more tests and assertions to identify and resolve issues.
