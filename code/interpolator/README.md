@@ -166,3 +166,23 @@ The spectral envelope of the combined audio is modified to match the interpolate
 
 The modified frames are recalculated using the inverse FFT. They're then recombined using overlap-add to create smooth transitions between frames. The final audio is normalized to prevent clipping and ensure consistent amplitude.
 
+### Bonus Method 5: Crossfade
+
+In an effort to create a smoother transition in and out of the transitions themselves, a very short crossfade is applied at each point. This helps to hide some of the artifacts produced by the other methods.
+
+## Lessons Learned
+One of the most challenging aspects of this project was the debugging process. The majority of the issues that I encountered were that the audio didn't "sound right" in one way or another, which was difficult to resolve through testing, or to research. My intention with this project was to find novel, new (read: worse) methods than the ones that already exist, which meant I couldn't pull too much information from one source.
+
+One benefit from this hardship is that I ended up learning a ton about audio analysis and manipulation. While these results have issues, there was a lot of learning behind the scenes, and I feel a lot more prepared for future audio projects.
+
+## Future Work
+
+This project has a lot of room for improvement!
+
+#### Non-vowel support
+I could easily add support for filenames other than the five vowels. I didn't test with any non-human noses, like instruments, but I expect the results would be interesting.
+
+### Artifacts
+The four methods combined generate a lot of artifacts, with the main culprits being the phase and formant methods.
+
+I believe I could resolve some of these issues by modifying the formants of the two sounds separately before being merged via magnitude / phase.
