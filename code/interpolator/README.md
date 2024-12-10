@@ -26,8 +26,13 @@ usage: main.py [-h] [-o OUT] [-s SOUNDS] instruction_file
 
 ### Options:
 * -h, --help: Show a help message and exit
-* -o OUT, --out OUT: Path to save the output file. If no output file is given, the result is played immediately after generation.
-* -s SOUNDS, --sounds SOUNDS: Directory of the sounds to use as samples (default: [./demo_sounds](./demo_sounds/)). Currently, only wav files named 'A','E','I','O', and 'U' are supported. (*Note: This is a silly restriction that can easily be fixed.*)
+* -o {filename}.wav, --out {filename}.wav: Path to save the output file. If no output file is given, the result is played immediately after generation.
+* -s {directory}, --sounds SOUNDS: Directory of the sounds to use as samples (default: [./demo_sounds](./demo_sounds/)). Currently, only wav files named 'A','E','I','O', and 'U' are supported. (*Note: This is a silly restriction that can easily be fixed.*)
+* Method flags (if none are given, all four methods are used.):
+    * -m, --magnitude       Enable magnitude processing.
+    * -p, --phase           Enable phase processing.
+    * -f, --formant         Enable formant processing.
+    * -k, --pitch           Enable pitch processing.
 
 ### Examples:
 ```bash
@@ -37,6 +42,10 @@ python src/main.py instructions.json
 ```bash
 # Generate audio using a custom set of samples.
 python src/main.py instructions.json -s ./custom_sounds
+```
+```bash
+# Generate audio and save to output.wav
+python src/main.py instructions.json -o output.wav
 ```
 ```bash
 # Generate audio and save to output.wav
