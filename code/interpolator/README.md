@@ -35,6 +35,8 @@ usage: main.py [-h] [-o OUT] [-s SOUNDS] instruction_file
     * -k, --pitch           Enable pitch processing.
 
 ### Examples:
+
+Example instructions and results can be found in the [examples](./examples/) folder. The letters at the end of each wav filename indicate what method flags were used.
 ```bash
 # Generate audio using the example instructions and play the output.
 python src/main.py instructions.json
@@ -48,8 +50,8 @@ python src/main.py instructions.json -s ./custom_sounds
 python src/main.py instructions.json -o output.wav
 ```
 ```bash
-# Generate audio and save to output.wav
-python src/main.py instructions.json -o output.wav
+# Generate audio using magnitude, phase and formant interpolation.
+python src/main.py instructions.json -mpf
 ```
 ## Instruction Format
 The instruction file contains a series of instructions in JSON format. Each instruction contains informaiton about a sound, its pitch, its duration, and the duration of the transition to the next sound.
