@@ -8,8 +8,21 @@ Welcome to my student portfolio for Computers, Sound and Music. This repository 
 - **[notebook.md](notebook.md)**: My engineering notebook, which contains detailed diary entries of my work and progress.
 - **[code/](code/)**: Directory where all code and libraries I develop during the course will be stored.
 
-## Homework Project Links
+## Project Links
 
-Homework #1: [clipped](./code/clipped/)
+### [Final project: Interpolator](./code/interpolator/)
+**Description**: a collection of methods for interpolating between continuous vowel sounds.
 
+### [Synth Synth](./code/SynthSynth/)
+**Description**: Semi-working, barebones visualizer of MIDI signal transmission.
+
+### [FFT](./code/fft/)
+**Description**: Converts audio to FFT and back again, using algorithms adapted from wikipedia.
+
+## Class Assignment Links:
+### [Clipped](./code/clipped/)
+
+### [Popgen](./code/popgen/)
+
+### [Adaptive Tone Control](./code/adaptive-tone-control/)
 
