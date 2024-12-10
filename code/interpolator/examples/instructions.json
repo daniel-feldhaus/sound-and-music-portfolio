@@ -3,7 +3,8 @@
         "vowel": "A",
         "offset": 0,
         "duration": 1000,
-        "transition_duration": 250
+        "transition_duration": 250,
+        "transition_methods": "mpfs"
     },
     {
         "vowel": "E",
