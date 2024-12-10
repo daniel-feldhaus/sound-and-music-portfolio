@@ -35,6 +35,10 @@ class InterpolationConfig:
 
     instructions: List[Instruction]
     sample_dir: str
+    interp_magnitude: bool
+    interp_phase: bool
+    interp_format: bool
+    interp_pitch: bool
     save_path: Optional[str] = None
 
 
@@ -119,6 +123,27 @@ def parse_arguments() -> InterpolationConfig:
     parser.add_argument(
         "-s", "--sounds", help="Sound sample directory.", default=get_default_sound_dir()
     )
+    # Add flags for magnitude, phase, formant, and pitch
+    parser.add_argument(
+        "-m", "--magnitude", action="store_true", help="Enable magnitude processing."
+    )
+    parser.add_argument("-p", "--phase", action="store_true", help="Enable phase processing.")
+    parser.add_argument("-f", "--formant", action="store_true", help="Enable formant processing.")
+    parser.add_argument("-k", "--pitch", action="store_true", help="Enable pitch processing.")
+
+    args = parser.parse_args()
+
+    # Handle logic for flags: if none are present, all should be true
+    if not (args.magnitude or args.phase or args.formant or args.pitch):
+        magnitude = True
+        phase = True
+        formant = True
+        pitch = True
+    else:
+        magnitude = args.magnitude
+        phase = args.phase
+        formant = args.formant
+        pitch = args.pitch
 
     args = parser.parse_args()
     save_path = Path(args.out) if args.out else None
@@ -130,6 +155,10 @@ def parse_arguments() -> InterpolationConfig:
         instructions=parse_instruction_file(args.instruction_file),
         save_path=save_path,
         sample_dir=sample_dir,
+        interp_magnitude=magnitude,
+        interp_phase=phase,
+        interp_format=formant,
+        interp_pitch=pitch,
     )
     return config
 
@@ -162,11 +191,11 @@ def process_audio(audio: AudioData, instruction: Instruction) -> AudioData:
     return audio
 
 
-def generate_from_instructions(instructions: List[Instruction], sample_dir: Path):
+def generate_from_instructions(config: InterpolationConfig):
     """Generate an audio file from instructions."""
-    sample_dict = get_sample_dict(instructions, sample_dir)
-    audio = process_audio(sample_dict[instructions[0].vowel], instructions[0])
-    for instruction_a, instruction_b in pairwise(instructions):
+    sample_dict = get_sample_dict(config.instructions, config.sample_dir)
+    audio = process_audio(sample_dict[config.instructions[0].vowel], config.instructions[0])
+    for instruction_a, instruction_b in pairwise(config.instructions):
         audio_b = process_audio(sample_dict[instruction_b.vowel], instruction_b)
         if instruction_a.transition_duration:
             audio = interpolate_signals(
@@ -175,8 +204,10 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
                 duration=instruction_a.transition_duration / 1000,
                 instruction_a=instruction_a,
                 instruction_b=instruction_b,
-                pitch_interpolation=True,
-                formant_interpolation=False,
+                pitch_interpolation=config.interp_pitch,
+                formant_interpolation=config.interp_format,
+                magnitude_interpolation=config.interp_magnitude,
+                phase_interpolation=config.interp_phase,
             )
         else:
             audio = AudioData(np.concatenate([audio.data, audio_b.data]), audio.sample_rate)
@@ -185,14 +216,14 @@ def generate_from_instructions(instructions: List[Instruction], sample_dir: Path
 
 def main():
     """Connect two sound files by interpolating between their ends."""
-    args = parse_arguments()
+    config = parse_arguments()
 
-    output_audio = generate_from_instructions(args.instructions, args.sample_dir)
+    output_audio = generate_from_instructions(config)
 
     # Save or play the result
-    if args.save_path:
-        sf.write(args.save_path, output_audio.data, output_audio.sample_rate)
-        print(f"Output saved to {args.save_path}")
+    if config.save_path:
+        sf.write(config.save_path, output_audio.data, output_audio.sample_rate)
+        print(f"Output saved to {config.save_path}")
     else:
         # Play the signal
         audio = sa.play_buffer(
