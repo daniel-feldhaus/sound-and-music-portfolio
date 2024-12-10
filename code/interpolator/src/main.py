@@ -150,7 +150,7 @@ def adjust_audio_duration(audio: AudioData, duration: float) -> AudioData:
     if start_duration < duration:
         overlap_duration = (len(audio.data) / audio.sample_rate) / 2
         while len(audio.data) < target_length:
-            audio = interpolate_signals(audio, audio, overlap_duration)
+            audio = interpolate_signals(audio, audio, overlap_duration, pitch_interpolation=False)
     clipped_audio = AudioData(audio.data[:target_length], audio.sample_rate)
     return clipped_audio
 
