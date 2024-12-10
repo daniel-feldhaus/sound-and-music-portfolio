@@ -1,50 +1,30 @@
-# React + TypeScript + Vite
+# Synth Synth
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Welcome to SynthSynth, my failed and scrapped first attempt at a final project!
 
-Currently, two official plugins are available:
+The idea behind this project was to create a slowed down representation of MIDI signal transmission.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Unfortunately, after lots of bugs, and a general loss of interest, I decided to scrap this project in favor of [interpolator](../interpolator/).
 
-## Expanding the ESLint configuration
+## Description
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Before scrapping, I managed to implement a single 'middle C' key which transmits a signal through a wire, which is then interpereted by a 'computer' into a MIDI code.
 
-- Configure the top-level `parserOptions` property like this:
+Unfortunately, the successful decoding seems like a bit of a fluke - it falls apart for other keys, as exemplified by the 'A' key.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Installation
+Installation instructions:
+```bash
+npm i
+npm run dev
 ```
+Then, open `http://localhost:5173/` to view the application.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## How to Use
+1. Press the 'C' key
+2. Marvel as the signal is transmitted through the wire
+3. Marvel agian as the "computer" decodes the press and release instructions for middle C.
+4. Press the 'A' key
+5. Marvel as everything breaks.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+![screenshot of SynthSynth, in all its glory](screenshot.png)
