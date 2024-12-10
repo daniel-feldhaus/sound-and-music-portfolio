@@ -128,7 +128,7 @@ def interpolate_formants(
         for f in frame_formants:
             if not np.isnan(f) and f > 0:
                 gaussian = np.exp(-0.5 * ((frequencies - f) / 50) ** 2)
-                envelope *= 1 + gaussian  # Modify as needed for desired effect
+                envelope *= 1 + gaussian
 
         modified_spectrum = spectrum * envelope
 
