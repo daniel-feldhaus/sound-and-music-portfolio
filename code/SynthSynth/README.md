@@ -12,6 +12,9 @@ Before scrapping, I managed to implement a single 'middle C' key which transmits
 
 Unfortunately, the successful decoding seems like a bit of a fluke - it falls apart for other keys, as exemplified by the 'A' key.
 
+![screenshot of SynthSynth, in all its glory](screenshot.png)
+
+
 ## Installation
 Installation instructions:
 ```bash
@@ -27,4 +30,13 @@ Then, open `http://localhost:5173/` to view the application.
 4. Press the 'A' key
 5. Marvel as everything breaks.
 
-![screenshot of SynthSynth, in all its glory](screenshot.png)
+## How to Test
+To test, run:
+```bash
+vitest
+```
+
+If you run into issues, you may need to install vitest globally
+```bash
+npm install -g vitests
+```
