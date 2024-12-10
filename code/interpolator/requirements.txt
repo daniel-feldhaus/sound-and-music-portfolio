@@ -1,0 +1,6 @@
+simpleaudio
+soundfile
+librosa
+numpy
+praat-parselmouth
+tqdm

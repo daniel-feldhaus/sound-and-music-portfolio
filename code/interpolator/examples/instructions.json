@@ -1,0 +1,33 @@
+[
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 1000,
+        "transition_duration": 250,
+        "transition_methods": "mpfs"
+    },
+    {
+        "vowel": "E",
+        "offset": 0,
+        "duration": 1000,
+        "transition_duration": 1000
+    },
+    {
+        "vowel": "O",
+        "offset": -2,
+        "duration": 2000,
+        "transition_duration": 1000
+    },
+    {
+        "vowel": "U",
+        "offset": 2,
+        "duration": 4000,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "I",
+        "offset": 0,
+        "duration": 2000,
+        "transition_duration": 1000
+    }
+]
