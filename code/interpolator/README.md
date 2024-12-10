@@ -17,7 +17,7 @@ pip install -e .
 ```
 
 ## Execution
-Interpolator generates an output sound using an instruction file and a directory of sample audio files. An example instruction file can be found at [instructions.json](./instructions.json), and the default sample directory is [./demo_sounds](./demo_sounds/`).
+Interpolator generates an output sound using an instruction file and a directory of sample audio files. An example instruction file can seen in [instructions.json](./examples/instructions.json), and the default sample directory is [./demo_sounds](./demo_sounds/`).
 
 usage: main.py [-h] [-o OUT] [-s SOUNDS] instruction_file
 
@@ -39,19 +39,19 @@ usage: main.py [-h] [-o OUT] [-s SOUNDS] instruction_file
 Example instructions and results can be found in the [examples](./examples/) folder. The letters at the end of each wav filename indicate what method flags were used.
 ```bash
 # Generate audio using the example instructions and play the output.
-python src/main.py instructions.json
+python src/main.py examples/instructions.json
 ```
 ```bash
 # Generate audio using a custom set of samples.
-python src/main.py instructions.json -s ./custom_sounds
+python src/main.py examples/instructions.json -s ./custom_sounds
 ```
 ```bash
 # Generate audio and save to output.wav
-python src/main.py instructions.json -o output.wav
+python src/main.py examples/instructions.json -o output.wav
 ```
 ```bash
 # Generate audio using magnitude, phase and formant interpolation.
-python src/main.py instructions.json -mpf
+python src/main.py examples/instructions.json -mpf
 ```
 ## Instruction Format
 The instruction file contains a series of instructions in JSON format. Each instruction contains informaiton about a sound, its pitch, its duration, and the duration of the transition to the next sound.
