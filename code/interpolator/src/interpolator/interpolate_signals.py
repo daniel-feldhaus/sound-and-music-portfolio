@@ -157,5 +157,4 @@ def interpolate_signals(
         ]
     )
 
-    # filtered_combined_signal = remove_quiet_chunks(combined_signal, 0.01, 0.03 * sample_rate)
     return AudioData(combined_signal, sample_rate)
