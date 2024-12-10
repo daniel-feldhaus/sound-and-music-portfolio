@@ -109,7 +109,9 @@ def get_default_sound_dir() -> str:
 
 def parse_arguments() -> InterpolationConfig:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Interpolate between two audio files.")
+    parser = argparse.ArgumentParser(
+        description="Generate audio by chaining together continuous samples."
+    )
     parser.add_argument(
         "instruction_file", help="File generation instructions, in JSON format.", type=str
     )
