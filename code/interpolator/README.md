@@ -42,12 +42,68 @@ python src/main.py instructions.json -s ./custom_sounds
 # Generate audio and save to output.wav
 python src/main.py instructions.json -o output.wav
 ```
+## Instruction Format
+The instruction file contains a series of instructions in JSON format. Each instruction contains informaiton about a sound, its pitch, its duration, and the duration of the transition to the next sound.
+
+The four settings are:
+* **vowel**: The vowel sound to make. Restricted to 'A', 'E', 'I', 'O', and 'U'.
+* **offset**: The note's offset in semitones from middle C.
+* **duration**: How long the note should be played*
+* **transition_duration**: How long the transition should be between this note and the next. If left out, there is no transition. This parameter is ignored for the last instruction.
+
+Example:
+```json
+[
+    {
+        "vowel": "A",
+        "offset": 0,
+        "duration": 500,
+        "transition_duration": 250
+    },
+    {
+        "vowel": "E",
+        "offset": 0,
+        "duration": 400,
+    },
+]
+```
+
+\* The duration of each note is not super intuitive. Since each note overlaps with the one after it, the actual duration of the audio is dependent on both `duration` and `transition_duration`. This "feature" makes it difficult to create audio with a consistent tempo.
+
+
 
 ## How it works
 
-Interpolator applies four different interpolations, which each use very different methods.
+Interpolator applies four different interpolations to achieve the final result.
 
-### Magnitue and Phase
+### Method 1: Pitch Interpolation
+
+Pitch interpolation adjusts the pitch of the two sounds before they are combined further by the other three methods.
+
+I initially expected this to be the easiest of the four methods, but it turned out to be relatively difficult to apply a linear change over time. In my initial implementation, I attempted to create a system that worked with any input sound, however I eventually simplified to a method that assumes the input is at middle C.
+
+The final method that I settle on uses the `WORLD` vocoder, which made things significantly easier by handing all of the feature extraction and recombination.
+
+The final result accomplishes the pitch transition, while introducing a fair amount of artifacts.
+
+#### Step 1: Pitch Analysis
+
+The original pitch of the audio is estimated using `WORLD`. This step extracts the fundamental frequency (f0) over time, which represents the perceived pitch of the sound.
+
+#### Step 2: Interpolating Pitch Scaling Factors
+
+A scaling factor is computed to adjust the pitch from the source frequency to the target frequency. The target frequency is linearly interpolated over time to ensure a smooth pitch transition:
+
+#### Step 3: Modifying the Pitch
+
+The extracted f0 values are multiplied by the interpolated scaling factors to achieve the desired pitch adjustment. Care is taken to ensure the modified f0 values remain within a reasonable range to avoid unnatural artifacts.
+
+#### Step 4: Resynthesis
+
+The audio is reconstructed using the modified f0 values, along with the spectral envelope and aperiodicity features extracted during the analysis step. This ensures that the pitch-modified audio retains its original timbre and quality.
+
+
+### Methods 2 & 3: Magnitue and Phase Interpolation
 
 The magnitude and phase interpolations are closely related, as they both modify different aspects of the Short-Time Fourier Transform (STFT).
 
@@ -84,4 +140,29 @@ $$
 #### Step 7: Conversion back to audio
 
 The resulting combination is converted back to audio with the ISTFT.
+
+### Method 4: Formant Interpolation
+
+The formant interpolation method focuses on smoothly transitioning the resonant frequencies (formants) between two sounds. I chose this method because formants are key features of vocal and instrumental timbres, so I thought that interpolating between them would help to emulate a more human transition. In reality, it seems that modifying formants like this is not very effective, or at least my chosen method wasn't.
+
+The result is a bit of a mixed bag. When paired with magnitude/phase shifting, I think that it does better-approximate human transitions, but it adds a sort of rhaspy quality and the occasional artifact.
+
+#### Step 1: Formant Extraction
+
+Formants are extracted from both audio signals using the `parcelmouth` library, which estimates resonant frequencies frame by frame.
+
+#### Step 2: Interpolation of Formants
+
+Once the formant frequencies are extracted, they are interpolated linearly over time between the two sounds.
+
+#### Step 3: Modification of Combined Audio
+
+The spectral envelope of the combined audio is modified to match the interpolated formants, frame by frame. This is achieved by:
+
+* Calculating the frequency spectrum of each frame using the FFT.
+* Applying a Gaussian weighting function centered on the interpolated formant frequencies to enhance the spectral energy at those frequencies.
+
+#### Step 4: Reconstructing the Audio
+
+The modified frames are recalculated using the inverse FFT. They're then recombined using overlap-add to create smooth transitions between frames. The final audio is normalized to prevent clipping and ensure consistent amplitude.
 
