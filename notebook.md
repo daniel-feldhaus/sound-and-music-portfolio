@@ -37,13 +37,16 @@ This document logs my daily work and progress throughout the course. Each entry 
 - **11/7/24**: Finished initial mouth sim research. Decided to focus on interpolating between continuous vowel noises.
 
 ### Week 7
-- **11/26/29**: Wrote some class notes (see [notes folder](./notes/))
-- **11/26/29**: Replaced unfinished svelte implementation of adaptive-tone-control with a python implementation (see [here](./code/adaptive-tone-control/))
-- **11/26/29 - 11/27/29**: Implemented most of the requested features for the popgen assignment (see [here](./code/popgen/))
-- **11/28/29**: Started work on final project [interpolator](./code/interpolator/). Implemented magnitude, phase and formant interpolation.
+- **11/26/24**: Wrote some class notes (see [notes folder](./notes/)).
+- **11/26/24**: Replaced unfinished svelte implementation of adaptive-tone-control with a python implementation (see [here](./code/adaptive-tone-control/)).
+- **11/26/24 - 11/27/24**: Implemented most of the requested features for the popgen assignment (see [here](./code/popgen/)).
+- **11/28/24**: Started work on final project [interpolator](./code/interpolator/). Implemented magnitude, phase and formant interpolation.
 
 ### Week 8
-- Researched various spectral morphing methods for use in [interpolator](./code/interpolator/)
+- Researched various spectral morphing methods for use in [interpolator](./code/interpolator/).
 
 ### Week 9
-- **10/6/29 - 10/8/24**: Continued work on final project [interpolator](./code/interpolator/). Implemented pitch shifting.
+- **10/6/24 - 10/8/24**: Continued work on final project [interpolator](./code/interpolator/). Implemented pitch shifting.
+
+### Week 10
+- **10/10/24**: Completed [interpolator](./code/interpolator/).
